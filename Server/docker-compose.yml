@@ -1,0 +1,94 @@
+# SSC Monitor: chạy toàn bộ hệ thống bằng 1 lệnh
+#   docker compose up -d --build
+# Web:  http://<ip-máy-chủ>:8000   (đăng nhập bằng ADMIN_USER / ADMIN_PASSWORD trong .env)
+# MQTT: <ip-máy-chủ>:1883          (node ESP32 gửi dữ liệu vào đây)
+
+services:
+  db:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ssc
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ssc}
+      POSTGRES_DB: ssc
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"   # chỉ mở cho máy chủ (Jupyter/pandas chạy trên máy chủ)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ssc"]
+      interval: 5s
+      retries: 20
+
+  mqtt:
+    image: eclipse-mosquitto:2.0.20
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqttdata:/mosquitto/data
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://ssc:${DB_PASSWORD:-ssc}@db:5432/ssc
+      MQTT_HOST: mqtt
+      SECRET_KEY: ${SECRET_KEY:-doi-chuoi-nay}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      # Trợ lý chat ở trang Nhập dữ liệu: ollama (model nhỏ chạy trên máy chủ), openai (API kiểu OpenAI:
+      # Gemini miễn phí, Groq, OpenRouter...) hoặc claude (cần ANTHROPIC_API_KEY)
+      AI_CHAT_PROVIDER: ${AI_CHAT_PROVIDER:-ollama}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-haiku-5-5}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash-lite}
+    ports:
+      - "8000:8000"
+
+  # Model chat nhỏ chạy ngay trên máy chủ (CPU được, không cần Internet sau khi tải model).
+  # Lần đầu tải model:  docker compose exec ollama ollama pull qwen2.5:7b
+  ollama:
+    image: ollama/ollama:0.12.6
+    restart: unless-stopped
+    volumes:
+      - ollamadata:/root/.ollama
+
+  # Môi trường thử mô hình AI. Bật bằng: docker compose --profile ai up -d
+  jupyter:
+    profiles: ["ai"]
+    image: quay.io/jupyter/scipy-notebook:latest
+    restart: unless-stopped
+    command: bash -c "pip install -q psycopg2-binary && start-notebook.sh"
+    depends_on: [db]
+    environment:
+      SSC_DB: postgresql://ssc:${DB_PASSWORD:-ssc}@db:5432/ssc
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:-ssc}
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    ports:
+      - "8888:8888"
+
+  # Bộ giả lập node để thử khi chưa có phần cứng. Bật bằng: docker compose --profile sim up -d
+  simulator:
+    profiles: ["sim"]
+    image: python:3.12-slim
+    command: sh -c "pip install -q paho-mqtt==2.1.0 && python /sim/sim.py --host mqtt --devices 3"
+    volumes:
+      - ./simulator:/sim:ro
+    depends_on: [mqtt]
+
+volumes:
+  dbdata:
+  mqttdata:
+  ollamadata:

@@ -1,0 +1,12 @@
+# Bí mật và file sinh ra
+.env
+**/.env
+node_modules/
+**/dist/
+**/api/static/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Tài liệu tham khảo: bài báo có bản quyền và file rất lớn (một file ~96 MB), giữ trên máy, không đưa lên GitHub
+Material/*.pdf
