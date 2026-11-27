@@ -7,7 +7,9 @@ import { useEffect, useState } from 'react'
 const CYCLE = 10          // giây mỗi lượt xe
 const SPEED = 150         // px/giây
 const START = -280        // vị trí đuôi xe lúc bắt đầu lượt
-const CUBE_X = 500        // tâm cục SSC
+const CUBES = [260, 420, 580, 740] // tâm các cục SSC trong cụm, chôn dọc làn xe
+const CUBE_X = CUBES[0]   // cục đầu tiên xe gặp
+const LAST_X = CUBES[CUBES.length - 1]
 const SPREAD = 42         // độ loang tải qua các lớp áo đường (px)
 const ROAD_Y = 150
 const AXLES = [40, 74, 222] // vị trí trục tính từ đuôi xe (2 trục sau + trục trước)
@@ -71,15 +73,23 @@ export function RoadScene() {
   const p = t - lap * CYCLE
   const x = START + p * SPEED
   const axX = AXLES.map(a => x + a)
-  const infl = axX.map(a => Math.exp(-(((a - CUBE_X) / SPREAD) ** 2)))
   const noise = 0.08 * Math.sin(t * 31) + 0.05 * Math.sin(t * 73)
-  const load = Math.max(0, infl.reduce((s, k, i) => s + k * spec.w[i], 0) + (infl.some(k => k > 0.02) ? noise : 0))
+  // ảnh hưởng của từng trục lên từng cục, tải trên từng cục
+  const inflOf = cx => axX.map(a => Math.exp(-(((a - cx) / SPREAD) ** 2)))
+  const cubes = CUBES.map((cx, j) => {
+    const infl = inflOf(cx)
+    const l = Math.max(0, infl.reduce((s, k, i) => s + k * spec.w[i], 0) + (infl.some(k => k > 0.02) ? noise * (1 + 0.3 * j) : 0))
+    return { cx, infl, load: l, level: Math.min(1, l / 12) }
+  })
+  const hot = cubes.reduce((a, c, j) => (c.load > cubes[a].load ? j : a), 0)
+  const load = cubes[hot].load
+  const level = cubes[hot].level
   const maxW = Math.max(...spec.w)
-  // trục đã đi qua hẳn cục: đọc xong tải của trục đó (trục trước tới cục trước)
+  // trục đã đi qua cục đầu: có số đọc đầu tiên; qua hết cụm: lấy trung bình 4 cục, cân xong
   const done = [2, 1, 0].filter(i => axX[i] > CUBE_X + 2.2 * SPREAD)
   const total = done.reduce((s, i) => s + spec.w[i], 0)
-  const finished = done.length === 3
-  const level = Math.min(1, load / 12)
+  const read = CUBES.filter(cx => axX[0] > cx + 2.2 * SPREAD).length
+  const finished = read === CUBES.length
 
   return (
     <div className="road-card">
@@ -114,29 +124,33 @@ export function RoadScene() {
         <text x="14" y={ROAD_Y + 63} className="rd-label">Móng cấp phối</text>
         <text x="14" y={ROAD_Y + 140} className="rd-label">Nền đất</text>
 
-        {/* vùng ứng suất lan xuống cục */}
-        <ellipse cx={CUBE_X} cy={ROAD_Y + 70} rx={60 + 40 * level} ry={50 + 30 * level} fill="url(#rdBulb)" opacity={level} />
-        {axX.map((a, i) => infl[i] > 0.05 && (
-          <g key={i} opacity={infl[i]} className="rd-cone">
-            <line x1={a - 6} y1={ROAD_Y} x2={CUBE_X - 34} y2={ROAD_Y + 92} />
-            <line x1={a + 6} y1={ROAD_Y} x2={CUBE_X + 34} y2={ROAD_Y + 92} />
+        {cubes.map((c, j) => (
+          <g key={c.cx}>
+            {/* vùng ứng suất lan xuống cục */}
+            <ellipse cx={c.cx} cy={ROAD_Y + 70} rx={50 + 34 * c.level} ry={44 + 26 * c.level} fill="url(#rdBulb)" opacity={c.level} />
+            {axX.map((a, i) => c.infl[i] > 0.05 && (
+              <g key={i} opacity={c.infl[i]} className="rd-cone">
+                <line x1={a - 6} y1={ROAD_Y} x2={c.cx - 30} y2={ROAD_Y + 92} />
+                <line x1={a + 6} y1={ROAD_Y} x2={c.cx + 30} y2={ROAD_Y + 92} />
+              </g>
+            ))}
+            {/* cục SSC chôn trong móng */}
+            <g transform={`translate(0 ${1.5 * c.level})`}>
+              <rect x={c.cx - 30} y={ROAD_Y + 92} width="60" height="52" rx="3" fill="url(#rdCube)" />
+              <rect x={c.cx - 30} y={ROAD_Y + 92} width="60" height="52" rx="3" fill="#22d3ee" opacity={0.08 + 0.45 * c.level} />
+              <line x1={c.cx - 15} y1={ROAD_Y + 96} x2={c.cx - 15} y2={ROAD_Y + 140} className="rd-electrode" />
+              <line x1={c.cx + 15} y1={ROAD_Y + 96} x2={c.cx + 15} y2={ROAD_Y + 140} className="rd-electrode" />
+            </g>
+            <text x={c.cx} y={ROAD_Y + 164} textAnchor="middle" className={'rd-label' + (j === hot && c.level > 0.05 ? ' strong' : '')}>
+              R-0{j + 1}
+            </text>
           </g>
         ))}
-
-        {/* cục SSC chôn trong móng */}
-        <g transform={`translate(0 ${1.5 * level})`}>
-          <rect x={CUBE_X - 36} y={ROAD_Y + 92} width="72" height="58" rx="3" fill="url(#rdCube)" />
-          <rect x={CUBE_X - 36} y={ROAD_Y + 92} width="72" height="58" rx="3" fill="#22d3ee" opacity={0.08 + 0.45 * level} />
-          <line x1={CUBE_X - 18} y1={ROAD_Y + 96} x2={CUBE_X - 18} y2={ROAD_Y + 146} className="rd-electrode" />
-          <line x1={CUBE_X + 18} y1={ROAD_Y + 96} x2={CUBE_X + 18} y2={ROAD_Y + 146} className="rd-electrode" />
-        </g>
-        <g className="rd-callout">
-          <line x1={CUBE_X - 40} y1={ROAD_Y + 150} x2={CUBE_X - 110} y2={ROAD_Y + 190} />
-          <text x={CUBE_X - 114} y={ROAD_Y + 204} textAnchor="end" className="rd-label strong">Cục SSC</text>
-        </g>
+        <text x={CUBE_X - 50} y={ROAD_Y + 122} textAnchor="end" className="rd-label strong">Cụm SSC</text>
 
         {/* cáp về tủ bên lề đường */}
-        <path className="lp-wire" d={`M${CUBE_X + 36} ${ROAD_Y + 112} H 905 V ${ROAD_Y + 2}`} />
+        <path className="lp-wire" d={`M${CUBE_X} ${ROAD_Y + 170} V ${ROAD_Y + 182} H 905 V ${ROAD_Y + 2}`} />
+        {CUBES.slice(1).map(cx => <path key={cx} className="lp-wire" d={`M${cx} ${ROAD_Y + 170} V ${ROAD_Y + 182}`} />)}
         <g transform={`translate(880 ${ROAD_Y - 64})`}>
           <rect x="0" y="0" width="50" height="62" rx="5" fill="#0f172a" stroke="#22d3ee" strokeOpacity=".7" />
           <circle className="lp-led" cx="38" cy="12" r="4" />
@@ -151,9 +165,9 @@ export function RoadScene() {
         <Truck x={x} spec={spec} spin={(x / 15) * (180 / Math.PI)} />
 
         {/* bảng điện tử bên đường */}
-        <g transform={`translate(${CUBE_X - 80} 2)`}>
+        <g transform={`translate(${CUBES[hot] - 80} 2)`}>
           <rect width="160" height="46" rx="8" fill="#0b1118" stroke={level > 0.05 ? '#fbbf24' : '#334155'} />
-          <text x="80" y="18" textAnchor="middle" fill="#94a3b8" fontSize="11">Tải trên cục SSC</text>
+          <text x="80" y="18" textAnchor="middle" fill="#94a3b8" fontSize="11">Tải trên cục R-0{hot + 1}</text>
           <text x="80" y="38" textAnchor="middle" fill="#fbbf24" fontSize="17" fontWeight="700" fontFamily="ui-monospace,monospace">
             {fmt(load)} tấn
           </text>
@@ -167,7 +181,7 @@ export function RoadScene() {
           <div className="road-bar"><i style={{ width: `${Math.min(100, (load / maxW) * 100)}%` }} /></div>
         </div>
         <div className="road-axles">
-          <small>{spec.name} · tải từng trục</small>
+          <small>{spec.name} · tải từng trục · đã qua {read}/{CUBES.length} cục</small>
           <div>
             {[2, 1, 0].map((i, k) => (
               <span key={i} className={'axle' + (done.includes(i) ? ' on' : '')}>
@@ -179,11 +193,11 @@ export function RoadScene() {
         <div className={'road-total' + (finished ? ' on' : '')}>
           <small>Trọng lượng xe</small>
           <b className="mono">{done.length ? `${fmt(total)} tấn` : '—'}</b>
-          <span>{finished ? 'Đã cân xong, gửi về server' : done.length ? 'Đang cộng từng trục…' : 'Chờ xe tới'}</span>
+          <span>{finished ? 'Trung bình 4 cục, đã gửi về server' : done.length ? 'Đang đọc qua cụm cục…' : 'Chờ xe tới'}</span>
         </div>
       </div>
-      <p className="road-note">Hình minh họa. Mỗi trục xe ép lên cục một lần, tín hiệu điện trở tăng giảm theo tải;
-        cộng các trục lại ra tổng trọng lượng xe mà không cần dừng xe.</p>
+      <p className="road-note">Hình minh họa. Mỗi trục xe ép lần lượt lên từng cục trong cụm, tín hiệu điện trở tăng giảm theo tải;
+        cộng các trục lại và lấy trung bình nhiều cục ra trọng lượng xe chính xác hơn, không cần dừng xe.</p>
     </div>
   )
 }
