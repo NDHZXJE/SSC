@@ -3,7 +3,7 @@ import { api, auth } from '../api'
 import './landing.css'
 import { SensorScene } from './SensorScene'
 import { AppsHub } from './AppsHub'
-import { t as tr, useLang, LangSwitch, locale } from '../i18n'
+import { t as tr, useLang, LangSwitch, locale, getLang } from '../i18n'
 
 // Load cycle shared by the animated block and the signal trace (period 6 s).
 const PERIOD = 3.2 // cùng nhịp với hoạt ảnh máy nén (lpPress trong landing.css)
@@ -123,7 +123,11 @@ const TEAM = [
   { name: 'Nguyễn Đức Hưng', photo: '/team/nguyen-duc-hung.jpg' },
 ]
 
-function Member({ name, photo, link }) {
+// Tiếng Anh/Nhật: tên không dấu (font Nhật không có dấu tiếng Việt chồng nhau)
+const plain = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+
+function Member({ name: viName, photo, link }) {
+  const name = getLang() === 'vi' ? viName : plain(viName)
   const [ok, setOk] = useState(true)
   const initials = name.split(' ').slice(-2).map(w => w[0]).join('')
   const card = (
