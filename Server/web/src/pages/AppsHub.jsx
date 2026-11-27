@@ -469,25 +469,84 @@ function Traffic() {
   )
 }
 
+// Bản sao số Đà Nẵng (sơ đồ cách điệu, không đúng tỉ lệ bản đồ).
+// Mỗi ô lưới là một cụm SSC dưới mặt đường / móng công trình; màu ô = tải trọng đo được.
+// Giờ trong ngày chạy vòng 6h→22h, tải dồn về trung tâm và các cầu vào giờ cao điểm.
+const DN_LAND = 'M0 120 L0 30 Q30 18 70 16 Q115 14 150 22 L160 24 Q170 30 176 26 Q184 8 210 6 Q232 8 230 20 Q214 30 192 34 Q180 64 194 120 Z'
+const DN_RIVER = 'M112 120 Q118 92 132 72 Q148 50 154 23'
+const DN_SPOTS = [
+  // x, y, bán kính, tải nền, hệ số giờ cao điểm, tên
+  [126, 56, 22, .45, .55, 'Hải Châu'],
+  [142, 52, 9, .35, .75, 'Cầu Rồng'],
+  [146, 38, 8, .3, .7, 'Cầu sông Hàn'],
+  [205, 26, 10, .55, .2, 'Cảng Tiên Sa'],
+  [36, 36, 18, .5, .3, 'KCN Hòa Khánh'],
+  [96, 72, 12, .4, .35, 'Sân bay'],
+  [84, 42, 16, .3, .45, 'Thanh Khê'],
+  [80, 100, 16, .25, .35, 'Cẩm Lệ'],
+  [166, 96, 15, .2, .3, 'Ngũ Hành Sơn'],
+  [170, 46, 14, .25, .4, 'Sơn Trà'],
+]
+const DN_LABELS = [[36, 46, 'Liên Chiểu'], [80, 34, 'Thanh Khê'], [118, 64, 'Hải Châu'], [168, 56, 'Sơn Trà'], [76, 110, 'Cẩm Lệ'], [162, 108, 'Ngũ Hành Sơn']]
+const DN_CELL = 6
+const DN_GRID = []
+for (let y = 4; y < 120; y += DN_CELL) for (let x = 0; x < 234; x += DN_CELL) DN_GRID.push([x, y])
+const heatColor = v => `hsl(${Math.round(200 - 200 * Math.min(1, v))} 85% ${48 + 6 * Math.min(1, v)}%)`
+
 function Twin() {
+  const t = useSceneClock()
+  const hour = 6 + (t * 1.4) % 16
+  const rush = Math.exp(-((hour - 7.5) ** 2) / 1.2) + Math.exp(-((hour - 17.5) ** 2) / 1.5)
+  const amp = DN_SPOTS.map(([, , , b, r], i) => b + r * rush + 0.06 * Math.sin(t * 1.3 + i))
+  const field = (x, y) => DN_SPOTS.reduce((s, [sx, sy, R], i) => s + amp[i] * Math.exp(-((x - sx) ** 2 + (y - sy) ** 2) / (R * R)), 0.08)
+  const cells = DN_GRID.map(([x, y]) => 1.5 * field(x + DN_CELL / 2, y + DN_CELL / 2) - 0.1)
+  const hot = DN_SPOTS.reduce((a, s, i) => (amp[i] > amp[a] ? i : a), 0)
+  const avg = cells.reduce((s, v) => s + v, 0) / cells.length
+  const hh = Math.floor(hour), mm = Math.floor((hour - hh) * 60 / 10) * 10
   return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <rect width="240" height="120" fill="#0b1220" />
-      {[0, 1, 2].map(c => [0, 1].map(r => (
-        <rect key={c + '' + r} x={10 + c * 74} y={8 + r * 40} width="68" height="34" rx="3" fill="#111c2b" stroke="#1e3a5f" />
-      )))}
-      <polyline className="ah-draw" points="14,36 24,28 34,32 44,20 54,26 64,16 74,22" fill="none" stroke="#22d3ee" strokeWidth="1.6" />
-      <polyline className="ah-draw" points="88,36 98,34 108,22 118,28 128,18 138,24 148,14" fill="none" stroke="#fbbf24" strokeWidth="1.6" style={{ animationDelay: '.6s' }} />
-      {[0, 1, 2, 3, 4].map(i => <rect key={i} x={164 + i * 12} y={40 - (i * 7) % 22 - 6} width="8" height={(i * 7) % 22 + 6} fill="#a78bfa" className="ah-bar" style={{ animationDelay: `${i * 0.15}s` }} />)}
-      <g transform="translate(14 54)">
-        <polygon points="30,4 54,16 30,28 6,16" fill="#64748b" /><polygon points="6,16 30,28 30,34 6,22" fill="#475569" /><polygon points="30,28 54,16 54,22 30,34" fill="#334155" />
-        <rect x="22" y="-6" width="8" height="18" fill="#94a3b8" className="ah-blink" />
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: '#0e3a52' }}>
+      <defs><clipPath id="ahDnLand"><path d={DN_LAND} /></clipPath></defs>
+      <rect width="240" height="120" fill="#0e3a52" />
+      <text x="40" y="9" fontSize="3.4" fill="#7dd3fc" opacity=".7">Vịnh Đà Nẵng</text>
+      <text x="214" y="46" fontSize="3.4" fill="#7dd3fc" opacity=".7" textAnchor="middle">Biển Đông</text>
+      <path d={DN_LAND} fill="#1e293b" />
+      <g clipPath="url(#ahDnLand)">
+        {DN_GRID.map(([x, y], i) => (
+          <rect key={i} x={x + .4} y={y + .4} width={DN_CELL - .8} height={DN_CELL - .8} rx="1" fill={heatColor(cells[i])} opacity={0.35 + 0.5 * Math.min(1, cells[i])} />
+        ))}
+        {DN_GRID.map(([x, y], i) => <circle key={'n' + i} cx={x + DN_CELL / 2} cy={y + DN_CELL / 2} r=".35" fill="#e2e8f0" opacity=".6" />)}
       </g>
-      <path d="M88 60 h60 M88 68 h48 M88 76 h54" stroke="#334155" strokeWidth="3" />
-      <circle cx="200" cy="66" r="9" className="ah-ring" />
-      <circle cx="200" cy="66" r="3" fill="#22c55e" />
-      <rect x="10" y="94" width="220" height="20" rx="3" fill="#111c2b" />
-      <rect x="14" y="100" width="40" height="8" rx="2" fill="#22d3ee" className="ah-scan" />
+      <path d={DN_LAND} fill="none" stroke="#7dd3fc" strokeOpacity=".5" strokeWidth=".5" />
+      <path d={DN_RIVER} fill="none" stroke="#0e3a52" strokeWidth="3.4" />
+      <text x="128" y="96" fontSize="2.8" fill="#7dd3fc" transform="rotate(-58 128 96)">sông Hàn</text>
+      {/* cầu */}
+      {[[136, 52, 148, 54], [141, 38, 152, 40]].map(([a, b, c, d], i) => <line key={i} x1={a} y1={b} x2={c} y2={d} stroke="#f8fafc" strokeWidth=".9" />)}
+      {DN_LABELS.map(([x, y, n]) => (
+        <text key={n} x={x} y={y} fontSize="3.4" fontWeight="700" fill="#f8fafc" textAnchor="middle" stroke="#0b1220" strokeWidth=".8" paintOrder="stroke">{n}</text>
+      ))}
+      {/* điểm nóng */}
+      <circle cx={DN_SPOTS[hot][0]} cy={DN_SPOTS[hot][1]} r="4" className="ah-ring" style={{ stroke: '#f97316' }} />
+      {/* bảng */}
+      <g transform="translate(196 54)">
+        <rect width="42" height="62" rx="3" fill="#0b1220" opacity=".92" stroke="#1e293b" strokeWidth=".4" />
+        <text x="3" y="6.5" fontSize="3.2" fontWeight="700" fill="#e2e8f0">Bản sao số</text>
+        <text x="3" y="11" fontSize="2.8" fill="#94a3b8">TP. Đà Nẵng</text>
+        <text x="39" y="11" fontSize="3.6" fontWeight="700" fill="#fbbf24" textAnchor="end" fontFamily="ui-monospace,monospace">{String(hh).padStart(2, '0')}:{String(mm).padStart(2, '0')}</text>
+        <text x="3" y="18" fontSize="2.7" fill="#94a3b8">Nút SSC</text>
+        <text x="39" y="18" fontSize="3" fill="#e2e8f0" textAnchor="end">12.480</text>
+        <text x="3" y="23.5" fontSize="2.7" fill="#94a3b8">Tải TB</text>
+        <text x="39" y="23.5" fontSize="3" fill="#e2e8f0" textAnchor="end">{(avg * 90 + 10).toFixed(0)} kPa</text>
+        <text x="3" y="29" fontSize="2.7" fill="#94a3b8">Giờ cao điểm</text>
+        <text x="39" y="29" fontSize="3" fill={rush > 0.4 ? '#f97316' : '#4ade80'} textAnchor="end">{rush > 0.4 ? 'Có' : 'Không'}</text>
+        <text x="3" y="36" fontSize="2.7" fill="#94a3b8">Điểm nóng</text>
+        <text x="3" y="41" fontSize="3.2" fontWeight="700" fill="#f97316">{DN_SPOTS[hot][5]}</text>
+        <defs><linearGradient id="ahDnLeg"><stop offset="0" stopColor={heatColor(0)} /><stop offset=".5" stopColor={heatColor(.5)} /><stop offset="1" stopColor={heatColor(1)} /></linearGradient></defs>
+        <text x="3" y="48" fontSize="2.6" fill="#94a3b8">Tải trọng phân bố</text>
+        <rect x="3" y="50" width="36" height="3" rx="1" fill="url(#ahDnLeg)" />
+        <text x="3" y="57.5" fontSize="2.5" fill="#94a3b8">thấp</text>
+        <text x="39" y="57.5" fontSize="2.5" fill="#94a3b8" textAnchor="end">cao</text>
+      </g>
     </svg>
   )
 }
@@ -498,7 +557,7 @@ const APPS = [
   ['dam', 'Quan trắc đê điều, mái dốc', 'Khối SSC gắn sát mặt thượng lưu đập ở nhiều cao độ để đo áp lực nước, và chôn dọc mái dốc để phát hiện sớm khối đất bắt đầu trượt.', Dam],
   ['building', 'Quan trắc công trình dân dụng', 'Mỗi chân cột đặt một khối SSC trong móng. Khi động đất, hệ thống thấy ngay cột nào bị ép quá tải để cảnh báo và kiểm tra sau sự cố.', Buildings, 10000],
   ['traffic', 'Quản lý lưu lượng giao thông', 'Một hàng khối SSC chôn ngang đường, mỗi làn một khối. Xe đè qua là được đếm theo làn và phân loại xe con hay xe tải theo lực ép.', Traffic, 9000],
-  ['twin', 'Bản sao số hạ tầng, đô thị', 'Dữ liệu từ hàng nghìn cục SSC đổ về mô hình số của cả thành phố.', Twin],
+  ['twin', 'Bản sao số: bản đồ tải trọng cả thành phố', 'Hàng nghìn cụm SSC dưới mặt đường và móng công trình khắp Đà Nẵng gửi số liệu về một bản đồ tải trọng sống. Thành phố thấy tải dồn về đâu theo từng giờ, nhất là các cầu và trung tâm vào giờ cao điểm.', Twin, 10000],
 ]
 
 // tên ngắn cho hàng tab
