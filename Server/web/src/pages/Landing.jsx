@@ -1,270 +1,248 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, auth } from '../api'
-import './landing.css'
+import '../landing.css'
+import RoadScene from './RoadScene'
 
-// Load cycle shared by the animated block and the signal trace (period 6 s).
-const PERIOD = 6
-const loadAt = t => 0.5 - 0.5 * Math.cos((2 * Math.PI * t) / PERIOD) // 0..1
+// Trang giới thiệu hiện ra trước khi đăng nhập. Chỉ dùng /api/health (không cần đăng nhập).
 
-// Fixed pseudo-random fibre network inside the block (deterministic).
-const FIBRES = Array.from({ length: 26 }, (_, i) => {
-  const r = k => (Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1
-  const a = Math.abs
-  const x = 70 + a(r(1)) * 220, y = 150 + a(r(2)) * 120
-  const ang = a(r(3)) * Math.PI, len = 26 + a(r(4)) * 30
-  return { x1: x, y1: y, x2: x + Math.cos(ang) * len, y2: y + Math.sin(ang) * len * 0.6, d: a(r(5)) * 3 }
-})
+// Các viên cốt liệu rải trên mặt cục bê tông (cố định để hình không nhảy mỗi lần vẽ)
+const GRAVEL = [
+  [170, 215, 7], [205, 260, 5], [160, 270, 6], [228, 300, 8], [190, 320, 5], [240, 250, 4], [178, 290, 4],
+  [300, 280, 6], [335, 300, 5], [360, 250, 7], [318, 325, 4], [282, 315, 5], [365, 290, 4], [348, 225, 4],
+  [230, 170, 6], [290, 160, 5], [262, 200, 7], [320, 185, 4], [200, 185, 4], [262, 145, 4],
+]
 
-function useClock() {
-  const [t, setT] = useState(0)
-  useEffect(() => {
-    let id, t0 = performance.now()
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const tick = now => { setT((now - t0) / 1000); id = requestAnimationFrame(tick) }
-    if (!reduce) id = requestAnimationFrame(tick)
-    else setT(PERIOD / 2)
-    return () => cancelAnimationFrame(id)
-  }, [])
-  return t
-}
-
-function BlockScene({ t }) {
-  const L = loadAt(t)
-  const press = 18 * L // plate travel (px)
+function SensorScene() {
   return (
-    <svg viewBox="0 0 360 318" className="scene" role="img" aria-label="Cục bê tông tự cảm biến chịu lực nén và phát tín hiệu điện">
+    <svg className="lp-scene" viewBox="0 0 540 430" role="img"
+      aria-label="Cục bê tông tự cảm biến chịu tải, dòng điện đi qua bê tông, node ESP32 gửi dữ liệu không dây">
       <defs>
-        <linearGradient id="top" x1="0" x2="1"><stop offset="0" stopColor="#8a929c" /><stop offset="1" stopColor="#6c737c" /></linearGradient>
-        <linearGradient id="front" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5b626b" /><stop offset="1" stopColor="#3d434a" /></linearGradient>
-        <linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4a5057" /><stop offset="1" stopColor="#30353b" /></linearGradient>
-        <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-        <clipPath id="blockclip"><polygon points="60,112 180,76 320,112 320,264 200,300 60,264" /></clipPath>
-        <pattern id="speckle" width="14" height="14" patternUnits="userSpaceOnUse">
-          <circle cx="3" cy="4" r="0.9" fill="#ffffff22" /><circle cx="10" cy="9" r="0.7" fill="#00000033" /><circle cx="6" cy="12" r="0.6" fill="#ffffff18" />
-        </pattern>
+        <linearGradient id="lpTop" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#c9ced6" /><stop offset="1" stopColor="#9aa2ad" />
+        </linearGradient>
+        <linearGradient id="lpLeft" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8b939e" /><stop offset="1" stopColor="#5d6570" />
+        </linearGradient>
+        <linearGradient id="lpRight" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#737b86" /><stop offset="1" stopColor="#474e58" />
+        </linearGradient>
+        <linearGradient id="lpPlate" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#334155" /><stop offset=".5" stopColor="#64748b" /><stop offset="1" stopColor="#334155" />
+        </linearGradient>
+        <radialGradient id="lpGlow">
+          <stop offset="0" stopColor="#22d3ee" stopOpacity=".55" /><stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+        </radialGradient>
+        <filter id="lpBlur"><feGaussianBlur stdDeviation="2.2" /></filter>
+        <path id="lpCurrent" d="M297 300 C 310 285, 322 300, 330 282 S 340 268, 343 262" />
+        <path id="lpCurrent2" d="M297 260 C 312 250, 320 262, 330 245 S 340 236, 343 232" />
       </defs>
 
-      {/* Force arrow + press plate */}
-      <g transform={`translate(0 ${press})`}>
-        <g className="arrow" opacity={0.35 + 0.65 * L}>
-          <line x1="180" y1="8" x2="180" y2="58" stroke="#ffb020" strokeWidth="5" strokeLinecap="round" />
-          <path d="M166 50 L180 72 L194 50 Z" fill="#ffb020" />
-          <text x="200" y="34" fill="#ffb020" fontSize="18" fontWeight="700">F</text>
-        </g>
-        <polygon points="60,92 180,56 320,92 200,128" fill="#c9ced4" opacity="0.9" />
-        <polygon points="60,92 200,128 200,138 60,102" fill="#9aa1a9" />
-        <polygon points="200,128 320,92 320,102 200,138" fill="#7d848c" />
-      </g>
+      {/* bóng đổ */}
+      <ellipse cx="262" cy="378" rx="170" ry="26" fill="#000" opacity=".35" filter="url(#lpBlur)" />
 
-      {/* Concrete block (slightly squashed with load) */}
-      <g transform={`translate(0 ${140 + press * 0.15}) scale(1 ${1 - 0.02 * L}) translate(0 -140)`}>
-        <polygon points="60,112 180,76 320,112 200,148" fill="url(#top)" />
-        <polygon points="60,112 200,148 200,300 60,264" fill="url(#front)" />
-        <polygon points="200,148 320,112 320,264 200,300" fill="url(#side)" />
-        <polygon points="60,112 200,148 200,300 60,264" fill="url(#speckle)" />
-        <polygon points="200,148 320,112 320,264 200,300" fill="url(#speckle)" />
+      {/* cục bê tông */}
+      <g className="lp-cube">
+        <polygon points="140,180 260,240 260,360 140,300" fill="url(#lpLeft)" />
+        <polygon points="260,240 380,180 380,300 260,360" fill="url(#lpRight)" />
+        <polygon className="lp-topface" points="260,120 380,180 260,240 140,180" fill="url(#lpTop)" />
+        {GRAVEL.map(([x, y, r], i) => (
+          <circle key={i} cx={x} cy={y} r={r} fill="#1f2937" opacity={0.18 + (i % 3) * 0.06} />
+        ))}
+        <polyline points="140,180 260,240 380,180" fill="none" stroke="#e5e7eb" strokeOpacity=".35" />
+        <line x1="260" y1="240" x2="260" y2="360" stroke="#e5e7eb" strokeOpacity=".2" />
 
-        {/* Carbon fibre network: glows brighter as compression closes the contacts */}
-        <g filter="url(#glow)" clipPath="url(#blockclip)">
-          {FIBRES.map((f, i) => {
-            const pulse = 0.5 + 0.5 * Math.sin(t * 4 + f.d * 2)
-            return <line key={i} x1={f.x1} y1={f.y1} x2={f.x2} y2={f.y2}
-              stroke="#22d3ee" strokeWidth="1.6" strokeLinecap="round" opacity={0.25 + 0.55 * L * pulse + 0.15 * pulse} />
-          })}
+        {/* vùng ứng suất phát sáng theo nhịp tải */}
+        <ellipse className="lp-stress" cx="320" cy="270" rx="48" ry="62" fill="url(#lpGlow)" />
+
+        {/* hai điện cực lưới */}
+        <g className="lp-electrode">
+          <line x1="297" y1="232" x2="297" y2="330" />
+          <line x1="343" y1="210" x2="343" y2="308" />
         </g>
 
-        {/* Copper electrodes */}
-        <polygon points="88,101 94,103 94,272 88,270" fill="#d98a4a" />
-        <polygon points="166,121 172,123 172,292 166,290" fill="#d98a4a" />
+        {/* dòng điện chạy giữa hai điện cực */}
+        {[0, 0.5, 1, 1.5].map(d => (
+          <circle key={'a' + d} r="3.2" className="lp-spark">
+            <animateMotion dur="2s" begin={`-${d}s`} repeatCount="indefinite"><mpath href="#lpCurrent" /></animateMotion>
+          </circle>
+        ))}
+        {[0.25, 0.9, 1.6].map(d => (
+          <circle key={'b' + d} r="2.6" className="lp-spark">
+            <animateMotion dur="2.3s" begin={`-${d}s`} repeatCount="indefinite"><mpath href="#lpCurrent2" /></animateMotion>
+          </circle>
+        ))}
       </g>
 
-      {/* Wires to the node */}
-      <path d="M91 101 C 80 50, 30 50, 22 118" stroke="#d98a4a" strokeWidth="2" fill="none" />
-      <path d="M169 121 C 160 40, 50 20, 30 118" stroke="#d98a4a" strokeWidth="2" fill="none" />
-      <g className="node">
-        <rect x="6" y="118" width="40" height="26" rx="4" fill="#0f2a33" stroke="#22d3ee" strokeWidth="1.2" />
-        <text x="26" y="135" textAnchor="middle" fontSize="9" fill="#22d3ee" fontWeight="700">IoT</text>
+      {/* bàn nén của máy + mũi tên lực */}
+      <g className="lp-press">
+        <polygon points="260,92 392,158 392,170 260,104 128,170 128,158" fill="url(#lpPlate)" opacity=".95" />
+        <polygon points="260,80 392,146 260,212 128,146" fill="#475569" opacity=".85" />
+        <polygon points="260,80 392,146 260,212 128,146" fill="none" stroke="#94a3b8" strokeOpacity=".6" />
+        {[[200, 40], [260, 20], [320, 40]].map(([x, y]) => (
+          <g key={x} className="lp-arrow">
+            <line x1={x} y1={y} x2={x} y2={y + 70} />
+            <polyline points={`${x - 9},${y + 58} ${x},${y + 72} ${x + 9},${y + 58}`} />
+          </g>
+        ))}
       </g>
-      {[0, 1, 2].map(k => (
-        <circle key={k} r="3" fill="#22d3ee" filter="url(#glow)">
-          <animateMotion dur="1.6s" repeatCount="indefinite" begin={`${k * 0.53}s`} path="M91 101 C 80 50, 30 50, 22 118" />
-        </circle>
-      ))}
+
+      {/* dây nối và node ESP32 */}
+      <path className="lp-wire" d="M343 214 C 400 205, 410 250, 432 258" />
+      <path className="lp-wire" d="M297 236 C 330 262, 392 276, 432 272" />
+      <g transform="translate(432 236)">
+        <rect width="78" height="54" rx="8" fill="#0f172a" stroke="#22d3ee" strokeOpacity=".7" />
+        <rect x="10" y="12" width="26" height="20" rx="3" fill="#1e293b" stroke="#475569" />
+        <circle className="lp-led" cx="64" cy="14" r="4" />
+        <text x="10" y="46" fill="#94a3b8" fontSize="10" fontFamily="ui-monospace,monospace">ESP32</text>
+        <g className="lp-wifi" fill="none" stroke="#22d3ee" strokeWidth="2.4" strokeLinecap="round">
+          <path d="M28 -12 a16 16 0 0 1 22 0" />
+          <path d="M22 -20 a26 26 0 0 1 34 0" />
+          <path d="M16 -28 a36 36 0 0 1 46 0" />
+        </g>
+      </g>
     </svg>
   )
 }
 
-function SignalTrace({ t }) {
-  // ρ falls under compression (piezoresistive), with small measurement noise.
-  const W = 520, H = 150, N = 160, span = 8
-  const pts = []
-  for (let i = 0; i < N; i++) {
-    const tt = t - span + (span * i) / (N - 1)
-    const rho = 1 - 0.62 * loadAt(tt) + 0.03 * Math.sin(tt * 37) + 0.02 * Math.sin(tt * 91)
-    pts.push(`${(W * i) / (N - 1)},${14 + (H - 28) * (1 - rho * 0.92)}`)
-  }
-  const L = loadAt(t)
+function LiveWave() {
+  // sóng điện trở suất / ứng suất chạy liên tục (2 chu kỳ giống nhau để trượt vòng)
+  const pts = n => Array.from({ length: n }, (_, i) => {
+    const x = i * 6
+    const y = 40 - 26 * Math.exp(-(((i % 44) - 22) ** 2) / 40) - 4 * Math.sin((2 * Math.PI * i) / 11)
+    return `${x},${y.toFixed(1)}`
+  }).join(' ')
+  const p = pts(45)
   return (
-    <div className="trace">
-      <div className="trace-head">
-        <span><i className="live" /> Tín hiệu minh họa · 100 mẫu/giây</span>
-        <span className="mono">σ = {(L * 16).toFixed(2)} MPa · F = {(L * 40).toFixed(1)} kN</span>
+    <div className="lp-wavecard">
+      <div className="lp-wavehead">
+        <span><i className="lp-dot" /> Cục C-01 · trực tiếp</span>
+        <span className="lp-mono">100 mẫu/giây</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-        {[0.25, 0.5, 0.75].map(g => <line key={g} x1="0" x2={W} y1={H * g} y2={H * g} className="gridline" />)}
-        <polyline points={pts.join(' ')} className="wave-glow" />
-        <polyline points={pts.join(' ')} className="wave" />
+      <svg viewBox="0 0 264 60" preserveAspectRatio="none" className="lp-wave">
+        <g className="lp-wavemove">
+          <polyline points={p} />
+          <polyline points={p} transform="translate(264 0)" />
+        </g>
       </svg>
-      <div className="trace-foot mono"><span>ρ (Ω·m)</span><span>8 giây gần nhất</span></div>
+      <div className="lp-wavefoot">
+        <div><small>ρ điện trở suất</small><b className="lp-mono">1 284 Ω·m</b></div>
+        <div><small>σ ứng suất</small><b className="lp-mono lp-amber">12,6 MPa</b></div>
+        <div><small>Tải</small><b className="lp-mono">283 kN</b></div>
+      </div>
     </div>
   )
 }
 
-function SystemStatus() {
-  // Real status from the public health endpoint (no login needed).
+function useHealth() {
   const [h, setH] = useState(null)
   useEffect(() => {
     let stop = false
     const load = () => fetch('/api/health').then(r => r.json()).then(d => !stop && setH(d)).catch(() => !stop && setH(false))
     load()
-    const id = setInterval(load, 5000)
-    return () => { stop = true; clearInterval(id) }
+    const t = setInterval(load, 5000)
+    return () => { stop = true; clearInterval(t) }
   }, [])
-  if (h === null) return null
-  const ok = h && h.ok
-  return (
-    <div className={'sys ' + (ok ? 'up' : 'down')}>
-      <i />
-      {ok ? <>Hệ thống đang hoạt động · MQTT {h.mqtt ? 'đã kết nối' : 'mất kết nối'} · {Number(h.packets || 0).toLocaleString('vi-VN')} gói dữ liệu đã nhận</>
-        : 'Không kết nối được máy chủ'}
-    </div>
-  )
-}
-
-function LoginPanel({ onClose }) {
-  const [u, setU] = useState('')
-  const [p, setP] = useState('')
-  const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-  const ref = useRef(null)
-  useEffect(() => { ref.current?.focus() }, [])
-  const submit = async e => {
-    e.preventDefault()
-    setErr(''); setBusy(true)
-    try {
-      const res = await api('/login', { method: 'POST', body: { username: u, password: p } })
-      auth.save(res)
-      location.hash = '#/'
-      location.reload()
-    } catch (e) { setErr(e.message) } finally { setBusy(false) }
-  }
-  return (
-    <div className="modal" onClick={e => e.target === e.currentTarget && onClose()}>
-      <form className="login-box" onSubmit={submit}>
-        <button type="button" className="close" onClick={onClose} aria-label="Đóng">×</button>
-        <h2>Đăng nhập</h2>
-        <p>Vào hệ thống giám sát SSC</p>
-        <label>Tên đăng nhập<input ref={ref} value={u} onChange={e => setU(e.target.value)} autoComplete="username" /></label>
-        <label>Mật khẩu<input type="password" value={p} onChange={e => setP(e.target.value)} autoComplete="current-password" /></label>
-        {err && <div className="err">{err}</div>}
-        <button type="submit" className="btn primary" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
-      </form>
-    </div>
-  )
+  return h
 }
 
 const STEPS = [
-  ['01', 'Cục SSC', 'Bê tông pha sợi carbon. Khi chịu nén, mạng sợi dẫn điện khít lại và điện trở suất ρ thay đổi.'],
-  ['02', 'Node IoT', 'ESP32-S3 với ADC 24-bit ADS1256 đọc điện áp hai đầu điện cực 100 lần mỗi giây, gửi qua Wi-Fi.'],
-  ['03', 'Server và AI', 'Tính ρ, bù nhiệt độ và độ ẩm, áp mô hình hiệu chuẩn riêng của từng cục để ra ứng suất và tải.'],
-  ['04', 'Web giám sát', 'Xem trực tiếp từng cục, hiệu chuẩn trên máy nén, quản lý thiết bị và xuất dữ liệu.'],
+  ['01', 'Bê tông tự cảm biến', 'Cục bê tông có phụ gia dẫn điện và hai điện cực lưới. Khi chịu nén, điện trở suất ρ thay đổi theo ứng suất.'],
+  ['02', 'Node ESP32 đo liên tục', 'Mỗi node đo điện áp 100 lần mỗi giây, kèm nhiệt độ, độ ẩm, rồi gửi về máy chủ qua Wi-Fi (MQTT).'],
+  ['03', 'Máy chủ hiệu chuẩn', 'Tính ρ, áp mô hình hiệu chuẩn riêng của từng cục (mô hình lai có bù nhiệt, tuổi bê tông) để ra ứng suất σ.'],
+  ['04', 'Theo dõi trên web', 'Xem trực tiếp ρ, σ, tải (kN) của mọi cục, xem lại lịch sử và xuất dữ liệu để phân tích.'],
 ]
 
 const FEATURES = [
-  ['Hiệu chuẩn từng cục', 'Mỗi cục có hệ số K riêng, ghi từng bậc tải trên máy nén ngay trên web, có phiên bản và người duyệt.'],
-  ['Bù môi trường', 'Mô hình điện trở suất ban đầu theo nhiệt độ và độ ẩm giúp tín hiệu ổn định khi thời tiết thay đổi.'],
-  ['Dữ liệu cho AI', 'Lưu đủ 100 mẫu/giây trên TimescaleDB, xuất CSV và Parquet, sẵn sàng cho học máy.'],
-  ['Nhiều gối, một sàn', 'Tổng tín hiệu của nhiều gối SSC tuyến tính với tải trên cả tấm sàn, sai số dưới 10% trong thí nghiệm.'],
+  ['M3 12h4l3-8 4 16 3-8h4', 'Giám sát thời gian thực', 'Biểu đồ trực tiếp, trạng thái online của từng node, cảnh báo khi số liệu bất thường.'],
+  ['M4 20V10m6 10V4m6 16v-7m4 7H2', 'Hiệu chuẩn từng cục', 'Ghi các bậc tải trên máy nén, khớp mô hình, kiểm tra R² rồi duyệt dùng chỉ trong vài bước.'],
+  ['M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 3 7 4 4 0 0 1-7 3 4 4 0 0 1-7-3 4 4 0 0 1 3-7V7a4 4 0 0 1 4-4z', 'Mô hình AI lai', 'Kết hợp vật lý và học máy, có khoảng tin cậy và tự đánh dấu khi thiếu cục tham chiếu.'],
+  ['M12 3v12m-5-5 5 5 5-5M4 21h16', 'Xuất dữ liệu', 'Tải dữ liệu thô 100 mẫu/giây hoặc dữ liệu gộp dưới dạng CSV, Parquet cho Excel, Python.'],
 ]
 
-export default function Landing({ openLogin = false }) {
-  const t = useClock()
-  const [login, setLogin] = useState(openLogin)
-  useEffect(() => setLogin(openLogin), [openLogin])
-  const L = loadAt(t)
-
+export default function Landing() {
+  const h = useHealth()
+  const how = useRef(null)
+  const online = h && h.ok
   return (
-    <div className="landing">
-      <nav className="lnav">
-        <a className="brand" href="#/"><span className="logo" />SSC Monitor</a>
-        <div className="lnav-links">
-          <a href="#how">Cách hoạt động</a>
-          <a href="#features">Tính năng</a>
-          <button className="btn ghost" onClick={() => setLogin(true)}>Đăng nhập</button>
-        </div>
+    <div className="lp">
+      <div className="lp-bg" aria-hidden="true"><span /><span /><span /></div>
+
+      <nav className="lp-nav">
+        <a className="lp-brand" href="#/">
+          <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+            <polygon points="16,3 28,9.5 16,16 4,9.5" fill="#cbd5e1" />
+            <polygon points="4,9.5 16,16 16,29 4,22.5" fill="#64748b" />
+            <polygon points="16,16 28,9.5 28,22.5 16,29" fill="#475569" />
+            <path d="M8 19 l3-2 2 3 3-5" stroke="#22d3ee" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          </svg>
+          SSC Monitor
+        </a>
+        <a className="lp-btn lp-btn-ghost" href="#/login">Đăng nhập</a>
       </nav>
 
-      <section className="hero">
-        <div className="hero-text">
-          <span className="eyebrow">Bê tông tự cảm biến · Self-sensing concrete</span>
-          <h1>Bê tông <em>cảm nhận</em> được lực tác động</h1>
+      <section className="lp-hero">
+        <div className="lp-copy">
+          <span className="lp-eyebrow">Bê tông tự cảm biến · Giám sát thời gian thực</span>
+          <h1>Bê tông <em>tự cảm nhận</em> ứng suất.<br />Bạn nhìn thấy từng nhịp tải.</h1>
           <p>
-            Mỗi cục bê tông là một cảm biến. Hệ thống đọc tín hiệu điện của từng cục, hiệu chuẩn bằng AI
-            và cho anh/chị theo dõi tải trọng kết cấu theo thời gian thực.
+            SSC Monitor thu tín hiệu điện từ các cục bê tông tự cảm biến, hiệu chuẩn riêng từng cục
+            và chuyển thành ứng suất, tải trọng hiển thị trực tiếp trên web.
           </p>
-          <div className="cta">
-            <button className="btn primary" onClick={() => setLogin(true)}>Vào hệ thống giám sát</button>
-            <a className="btn ghost" href="#how">Tìm hiểu cách hoạt động</a>
+          <div className="lp-cta">
+            <a className="lp-btn" href="#/login">Đăng nhập hệ thống →</a>
+            <button className="lp-btn lp-btn-ghost" onClick={() => how.current?.scrollIntoView({ behavior: 'smooth' })}>
+              Cách hoạt động
+            </button>
           </div>
-          <SystemStatus />
-          <div className="kpis">
-            <div><b>100</b><span>mẫu/giây mỗi cục</span></div>
-            <div><b>24-bit</b><span>độ phân giải ADC</span></div>
-            <div><b>R² &gt; 0.9</b><span>mô hình hiệu chuẩn</span></div>
+          <div className="lp-status">
+            <span className={'lp-pill ' + (online ? 'on' : h === false ? 'off' : '')}>
+              <i className="lp-dot" /> {online ? 'Hệ thống đang hoạt động' : h === false ? 'Không kết nối được máy chủ' : 'Đang kiểm tra…'}
+            </span>
+            {online && <>
+              <span className="lp-pill">MQTT {h.mqtt ? 'đã kết nối' : 'mất kết nối'}</span>
+              <span className="lp-pill lp-mono">{Number(h.packets).toLocaleString('vi-VN')} gói đã nhận</span>
+            </>}
           </div>
         </div>
-        <div className="hero-visual">
-          <div className="glow-bg" style={{ opacity: 0.35 + 0.4 * L }} />
-          <BlockScene t={t} />
-          <SignalTrace t={t} />
+        <div className="lp-visual">
+          <SensorScene />
+          <LiveWave />
         </div>
       </section>
 
-      <section id="how" className="how">
-        <h2>Từ lực nén đến số liệu trên màn hình</h2>
-        <div className="steps">
-          {STEPS.map(([n, h, d], i) => (
-            <div className="step" key={n}>
-              <span className="num">{n}</span>
-              <h3>{h}</h3>
-              <p>{d}</p>
-              {i < STEPS.length - 1 && <span className="flow" aria-hidden="true"><i /></span>}
+      <section className="lp-section">
+        <h2>Chôn dưới mặt đường, cân từng chiếc xe</h2>
+        <p className="lp-lead">Cục bê tông tự cảm biến nằm trong lớp móng. Mỗi trục xe đi qua làm điện trở suất thay đổi, hệ thống đổi ra tải trục và cộng lại thành trọng lượng xe.</p>
+        <RoadScene />
+      </section>
+
+      <section className="lp-section" ref={how}>
+        <h2>Cách hoạt động</h2>
+        <p className="lp-lead">Từ cục bê tông đến biểu đồ trên màn hình, mất chưa tới một giây.</p>
+        <ol className="lp-steps">
+          {STEPS.map(([n, t, d]) => (
+            <li key={n}><span className="lp-num">{n}</span><h3>{t}</h3><p>{d}</p></li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="lp-section">
+        <h2>Tính năng chính</h2>
+        <div className="lp-features">
+          {FEATURES.map(([icon, t, d]) => (
+            <div className="lp-feature" key={t}>
+              <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d={icon} /></svg>
+              <h3>{t}</h3><p>{d}</p>
             </div>
           ))}
         </div>
-        <div className="formula mono">
-          <b>R<sub>s</sub> = R<sub>r</sub>·U<sub>s</sub> / (U<sub>p</sub> − U<sub>s</sub>)</b>
-          <span>→</span><b>ρ = R<sub>s</sub>·A / L</b><span>→</span><b>Δρ = K·σ</b>
-        </div>
       </section>
 
-      <section id="features" className="features">
-        {FEATURES.map(([h, d]) => (
-          <div className="feature" key={h}><h3>{h}</h3><p>{d}</p></div>
-        ))}
+      <section className="lp-final">
+        <h2>Sẵn sàng theo dõi công trình?</h2>
+        <a className="lp-btn" href="#/login">Đăng nhập</a>
       </section>
 
-      <section className="final">
-        <h2>Sẵn sàng theo dõi kết cấu của anh/chị?</h2>
-        <button className="btn primary" onClick={() => setLogin(true)}>Đăng nhập</button>
-      </section>
-
-      <footer className="lfoot">
-        <span>SSC Monitor · Hệ thống giám sát bê tông tự cảm biến</span>
-        <span>Mô hình dựa trên các nghiên cứu về vật liệu xi măng tự cảm biến công bố 2023–2026</span>
-      </footer>
-
-      {login && <LoginPanel onClose={() => { setLogin(false); if (location.hash === '#/login') location.hash = '#/' }} />}
+      <footer className="lp-foot">SSC Monitor · Hệ thống giám sát bê tông tự cảm biến</footer>
     </div>
   )
 }
