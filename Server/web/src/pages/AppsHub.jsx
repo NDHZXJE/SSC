@@ -10,8 +10,8 @@ const BR_SUP = [{ x: 44, name: 'Mố trái' }, { x: 120, name: 'Trụ giữa' },
 const BR_DECK = 64 // mặt trên bản mặt cầu
 const BR_SEAT = 72 // đáy dầm = mặt trên khối SSC
 const BR_CARS = [
-  { kind: 'car', len: 20, w: 1.6, v: 34, off: 0, color: '#ef4444' },
-  { kind: 'truck', len: 32, w: 12, v: 22, off: 150, color: '#f59e0b' },
+  { kind: 'car', len: 20, w: 1.6, v: 28, off: 0, color: '#ef4444' },
+  { kind: 'truck', len: 32, w: 12, v: 28, off: 160, color: '#f59e0b' },
 ]
 
 function bridgeLoads(xs) {
@@ -27,11 +27,11 @@ function bridgeLoads(xs) {
 
 function BrCar({ x, color, spin }) {
   return (
-    <g transform={`translate(${x - 10} ${BR_DECK - 9})`}>
+    <g transform={`translate(${x + 10} ${BR_DECK - 9}) scale(-1 1)`}>
       <path d="M1 7 L1 4.6 Q1 3.6 2.2 3.4 L5.5 2.8 L8.6 0.4 Q9.2 0 10 0 L14.5 0 Q15.4 0 16 .6 L18 3 L19.2 3.4 Q20 3.7 20 4.6 L20 7 Z" fill={color} />
       <path d="M8.9 1 L10.6 1 L10.6 3 L6.6 3 Z M11.4 1 L14.4 1 L16.4 3 L11.4 3 Z" fill="#bae6fd" opacity=".85" />
-      <rect x="19" y="4.2" width="1.2" height="1" rx=".4" fill="#fde68a" />
-      <rect x=".6" y="4.4" width="1" height="1" rx=".4" fill="#f87171" />
+      <rect x="19" y="4.2" width="1.2" height="1" rx=".4" fill="#f87171" />
+      <rect x=".6" y="4.4" width="1" height="1" rx=".4" fill="#fde68a" />
       {[5, 15.5].map(cx => (
         <g key={cx} transform={`translate(${cx} 7.2) rotate(${spin})`}>
           <circle r="2" fill="#0f172a" /><circle r="1" fill="#94a3b8" /><line x1="-1" x2="1" stroke="#0f172a" strokeWidth=".4" />
@@ -141,31 +141,130 @@ function Bridge() {
         ))}
       </g>
       {/* trạm thu + vệ tinh */}
-      <rect x="206" y="58" width="8" height="10" rx="1" fill="#1e293b" stroke="#22d3ee" strokeWidth=".4" />
-      <line x1="210" x2="210" y1="58" y2="52" stroke="#94a3b8" strokeWidth=".5" />
-      <circle cx="210" cy="51" r=".9" className="ah-blink" />
-      <path d={`M196 ${BR_SEAT + 3} L206 66`} stroke="#22d3ee" strokeWidth=".4" />
+      <rect x="212" y="76" width="9" height="9" rx="1" fill="#1e293b" stroke="#22d3ee" strokeWidth=".4" />
+      <text x="216.5" y="90" fontSize="2.8" fill="#94a3b8" textAnchor="middle">trạm thu</text>
+      <line x1="216.5" x2="216.5" y1="76" y2="72" stroke="#94a3b8" strokeWidth=".5" />
+      <circle cx="216.5" cy="71.4" r=".9" className="ah-blink" />
+      <path d={`M201 ${BR_SEAT + 3.5} L212 80`} stroke="#22d3ee" strokeWidth=".4" />
       <g className="ah-bob"><rect x="206" y="12" width="12" height="7" rx="1" fill="#cbd5e1" /><rect x="197" y="14" width="8" height="3" fill="#3b82f6" /><rect x="219" y="14" width="8" height="3" fill="#3b82f6" /></g>
-      <path className="ah-beam" d="M210 50 L212 20" stroke="#22d3ee" strokeDasharray="2 3" strokeWidth=".6" />
+      <path className="ah-beam" d="M216.5 70 L212 20" stroke="#22d3ee" strokeDasharray="2 3" strokeWidth=".6" />
     </svg>
   )
 }
 
-function Dam() {
+// Trái: mặt cắt đập trọng lực, 3 khối SSC gắn sát mặt thượng lưu ở 3 cao độ đo áp lực nước.
+// Phải: mái dốc / đê, 3 khối SSC chôn dọc mái, đo biến dạng khi khối đất trượt dần theo mặt trượt.
+function useSceneClock() {
+  const [t, setT] = useState(0)
+  useEffect(() => {
+    const speed = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.5 : 1
+    let raf, last = performance.now(), acc = 0
+    const loop = now => { acc += (now - last) / 1000 * speed; last = now; setT(acc); raf = requestAnimationFrame(loop) }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  return t
+}
+
+function SensorChip({ x, y, k, warn, rot = 0 }) {
+  const c = warn ? '#f97316' : '#22d3ee'
   return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g transform={`translate(${x} ${y}) rotate(${rot})`}>
+      <rect x="-4.5" y="-3" width="9" height="6" rx=".7" fill="#9aa2ad" stroke={c} strokeWidth={0.4 + k * 0.7} />
+      <rect x="-4.5" y="-3" width="9" height="6" rx=".7" fill={c} opacity={k * 0.5} />
+      <line x1="-3.5" x2="3.5" y1="-1.1" y2="-1.1" stroke="#b45309" strokeWidth=".8" />
+      <line x1="-3.5" x2="3.5" y1="1.1" y2="1.1" stroke="#b45309" strokeWidth=".8" />
+      <circle r={5.5 + k * 3} fill="none" stroke={c} strokeOpacity={k * 0.7} strokeWidth=".5" />
+    </g>
+  )
+}
+
+const DAM_FOOT = 100
+const DAM_S = [{ y: 46, n: 'D1' }, { y: 64, n: 'D2' }, { y: 84, n: 'D3' }]
+const SLOPE_A = [150, 100], SLOPE_B = [204, 50]
+const SLOPE_S = [{ u: 0.22, n: 'M1', w: 0.35 }, { u: 0.5, n: 'M2', w: 1 }, { u: 0.78, n: 'M3', w: 0.6 }]
+
+function Dam() {
+  const t = useSceneClock()
+  const lvl = 36 + 5 * Math.sin(t * 0.7) // cao độ mặt nước (y)
+  const P = DAM_S.map(s => Math.max(0, s.y - lvl) * 0.098 * 10) // kPa quy ước ~ 9.8 kPa / m, 1 đv = 1 m
+  const pMax = (DAM_FOOT - 30) * 0.98
+  const cyc = (t % 10) / 10 // mái dốc: dịch chuyển tăng dần rồi được gia cố, lặp lại
+  const d = cyc < 0.8 ? cyc / 0.8 * 3.2 : 3.2 * (1 - (cyc - 0.8) / 0.2)
+  const warn = d > 2.2
+  const dx = -0.73 * d * 0.6, dy = 0.68 * d * 0.6 // dịch theo hướng xuống mái
+  const nx = 0.68, ny = 0.73 // pháp tuyến vào trong đất
+  const pt = u => [SLOPE_A[0] + (SLOPE_B[0] - SLOPE_A[0]) * u, SLOPE_A[1] + (SLOPE_B[1] - SLOPE_A[1]) * u]
+  return (
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: 'linear-gradient(#0f2a3d 50%, #0e3a52 50%)' }}>
       <rect width="240" height="120" fill="url(#ahSky)" />
-      <rect x="0" y="44" width="70" height="76" fill="#0e3a52" />
-      <path className="ah-wave" d="M-40 46 q10 -4 20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke="#7dd3fc" strokeOpacity=".7" fill="none" />
-      <polygon points="66,30 100,30 120,120 66,120" fill="#94a3b8" />
-      {[0, 1, 2].map(i => <rect key={i} x={72 + i * 9} y="34" width="6" height="12" fill="#64748b" />)}
-      <g className="ah-fall">{[0, 1, 2, 3].map(i => <line key={i} x1={102 + i * 3} y1="46" x2={110 + i * 4} y2="104" stroke="#e0f2fe" strokeWidth="2" strokeDasharray="6 6" />)}</g>
-      <rect x="100" y="104" width="140" height="16" fill="#0e3a52" />
-      <polygon points="150,104 200,40 240,30 240,104" fill="#a16207" />
-      <polygon points="170,104 205,60 240,52 240,104" fill="#78350f" opacity=".6" />
-      <rect x="203" y="54" width="10" height="16" rx="2" fill="#cbd5e1" stroke="#22d3ee" />
-      <circle cx="208" cy="62" r="6" className="ah-ring" />
-      <circle cx="208" cy="62" r="6" className="ah-ring" style={{ animationDelay: '.9s' }} />
+      {/* ===== đập ===== */}
+      <rect x="0" y={lvl} width="56" height={DAM_FOOT - lvl} fill="#0e3a52" />
+      <clipPath id="ahDamClip"><rect width="56" height="120" /></clipPath>
+      <path clipPath="url(#ahDamClip)" className="ah-wave" d={`M-40 ${lvl} q5 -2 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0`} stroke="#7dd3fc" strokeOpacity=".7" fill="none" strokeWidth=".6" />
+      {/* biểu đồ áp lực thủy tĩnh */}
+      {[0, 1, 2, 3, 4, 5, 6].map(i => {
+        const y = lvl + 4 + i * (DAM_FOOT - lvl - 6) / 6, L = (y - lvl) * 0.22
+        return <g key={i}><line x1={55 - L} x2="55" y1={y} y2={y} stroke="#38bdf8" strokeWidth=".5" /><path d={`M55 ${y} l-1.6 -1 v2 z`} fill="#38bdf8" /></g>
+      })}
+      <line x1="55" y1={lvl} x2={55 - (DAM_FOOT - lvl) * 0.22} y2={DAM_FOOT - 1} stroke="#38bdf8" strokeOpacity=".5" strokeWidth=".4" />
+      <polygon points={`56,28 70,28 112,${DAM_FOOT} 56,${DAM_FOOT}`} fill="#94a3b8" />
+      <rect x="54" y="26" width="18" height="2.4" fill="#cbd5e1" />
+      <rect x="0" y={DAM_FOOT} width="240" height="20" fill="#3f3a33" />
+      {/* nước xả hạ lưu */}
+      {/* cáp tín hiệu + trạm đo trên đỉnh đập */}
+      <path d={`M62 ${DAM_S[2].y} V31`} stroke="#22d3ee" strokeWidth=".4" strokeDasharray="1 1" />
+      <rect x="64" y="19" width="7" height="7" rx="1" fill="#1e293b" stroke="#22d3ee" strokeWidth=".4" />
+      <line x1="67.5" x2="67.5" y1="19" y2="14" stroke="#94a3b8" strokeWidth=".5" /><circle cx="67.5" cy="13.4" r=".9" className="ah-blink" />
+      {DAM_S.map((s, i) => (
+        <g key={s.n}>
+          <SensorChip x={62} y={s.y} k={P[i] / pMax} />
+          <line x1="67" x2="86" y1={s.y} y2={s.y} stroke="#22d3ee" strokeWidth=".3" strokeDasharray="1 1" />
+          <rect x="86" y={s.y - 3.6} width="30" height="7.2" rx="1.6" fill="#0b1220" stroke="#22d3ee" strokeWidth=".3" />
+          <text x="88" y={s.y + 1.3} fontSize="3.3" fill="#e2e8f0">SSC-{s.n}</text>
+          <text x="114" y={s.y + 1.3} fontSize="3.3" fill="#22d3ee" textAnchor="end">{P[i].toFixed(0)} kPa</text>
+        </g>
+      ))}
+      <text x="4" y="8" fontSize="4" fontWeight="700" fill="#e2e8f0">Đập thủy điện</text>
+      <text x="4" y="13" fontSize="3.2" fill="#94a3b8">SSC sát mặt thượng lưu, 3 cao độ</text>
+      <text x="4" y={lvl - 2} fontSize="3" fill="#7dd3fc">▼ MNH</text>
+
+      {/* ===== mái dốc ===== */}
+      <line x1="128" x2="128" y1="6" y2="98" stroke="#1e293b" strokeWidth=".5" />
+      <polygon points={`132,${DAM_FOOT} ${SLOPE_A[0]},${SLOPE_A[1]} ${SLOPE_B[0]},${SLOPE_B[1]} 240,50 240,${DAM_FOOT}`} fill="#78350f" />
+      {/* khối trượt giữa mặt mái và mặt trượt */}
+      <g transform={`translate(${dx} ${dy})`}>
+        <path d={`M146 ${DAM_FOOT} L${SLOPE_A[0]} ${SLOPE_A[1]} L${SLOPE_B[0]} ${SLOPE_B[1]} L214 50 Q 206 96 146 ${DAM_FOOT} Z`} fill="#a16207" />
+        {[[168, 84], [182, 72], [194, 62], [160, 94]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r=".9" fill="#78350f" />)}
+      </g>
+      <path d={`M146 ${DAM_FOOT} Q 206 96 214 50`} fill="none" stroke={warn ? '#f97316' : '#fbbf24'} strokeWidth=".6" strokeDasharray="2 1.5" />
+      <text x="208" y="84" fontSize="3" fill={warn ? '#f97316' : '#fbbf24'}>mặt trượt</text>
+      {/* cỏ */}
+      <line x1={SLOPE_B[0]} x2="240" y1="50" y2="50" stroke="#4d7c0f" strokeWidth="1" />
+      {SLOPE_S.map(s => {
+        const [x, y] = pt(s.u), k = Math.min(1, d / 3.2 * s.w)
+        const sx = x + nx * 6 + dx, sy = y + ny * 6 + dy
+        const w = warn && s.w === 1
+        return (
+          <g key={s.n}>
+            <SensorChip x={sx} y={sy} k={k} warn={w} rot={-43} />
+            <line x1={sx} y1={sy} x2={sx - 16} y2={sy - 14} stroke={w ? '#f97316' : '#22d3ee'} strokeWidth=".3" strokeDasharray="1 1" />
+            <rect x={sx - 34} y={sy - 18} width="18" height="6.6" rx="1.6" fill="#0b1220" stroke={w ? '#f97316' : '#22d3ee'} strokeWidth=".3" />
+            <text x={sx - 25} y={sy - 13.6} fontSize="3.2" fill="#e2e8f0" textAnchor="middle">SSC-{s.n}</text>
+          </g>
+        )
+      })}
+      <text x="134" y="8" fontSize="4" fontWeight="700" fill="#e2e8f0">Mái dốc, đê</text>
+      <text x="134" y="13" fontSize="3.2" fill="#94a3b8">SSC chôn dọc mái, vuông góc mặt dốc</text>
+      <g transform="translate(176 20)">
+        <rect width="60" height="20" rx="3" fill="#0b1220" opacity=".9" stroke={warn ? '#f97316' : '#1e293b'} strokeWidth=".5" />
+        <text x="4" y="7" fontSize="3.3" fill="#94a3b8">Dịch chuyển mái</text>
+        <text x="56" y="7" fontSize="3.6" fill="#e2e8f0" textAnchor="end">{(d * 4).toFixed(1)} mm</text>
+        <rect x="4" y="10" width="52" height="2.6" rx="1" fill="#1e293b" />
+        <rect x="4" y="10" width={52 * d / 3.2} height="2.6" rx="1" fill={warn ? '#f97316' : '#22d3ee'} />
+        <text x="4" y="17.4" fontSize="3.2" fill={warn ? '#f97316' : '#4ade80'}>{warn ? '⚠ Cảnh báo trượt' : '● An toàn'}</text>
+      </g>
     </svg>
   )
 }
@@ -296,7 +395,7 @@ function Warning() {
 const APPS = [
   ['weigh', 'Cân xe khi đang chạy', 'Cụm 4 cục SSC chôn dọc làn xe dưới lớp móng. Xe chạy qua, từng trục ép lần lượt lên các cục, hệ thống đọc tải và cộng ra trọng lượng xe mà không cần dừng xe.', RoadScene, 12000],
   ['bridge', 'Giám sát sức khỏe công trình cầu đường', 'Khối SSC đặt tại gối cầu trên mố và trụ, đo lực truyền xuống khi xe chạy qua, phát hiện sớm lún, nứt hay quá tải.', Bridge],
-  ['dam', 'Quan trắc đê điều, mái dốc', 'Cảm nhận áp lực nước và dịch chuyển mái dốc theo thời gian thực.', Dam],
+  ['dam', 'Quan trắc đê điều, mái dốc', 'Khối SSC gắn sát mặt thượng lưu đập ở nhiều cao độ để đo áp lực nước, và chôn dọc mái dốc để phát hiện sớm khối đất bắt đầu trượt.', Dam],
   ['building', 'Quan trắc công trình dân dụng', 'Cột, dầm, sàn tự báo tải trọng và biến dạng trong suốt vòng đời công trình.', Buildings],
   ['traffic', 'Quản lý lưu lượng giao thông', 'Đếm xe, đo tải trục và cân xe khi đang chạy ngay dưới mặt đường.', Traffic],
   ['energy', 'Hạ tầng năng lượng', 'Móng tua-bin gió, trụ điện, trạm biến áp được giám sát liên tục.', Energy],
