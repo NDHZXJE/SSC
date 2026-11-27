@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { RoadScene } from './RoadScene'
 
 // Sơ đồ ứng dụng: khối SSC + vi mạch + IoT + AI ở giữa, 7 lĩnh vực ứng dụng xung quanh.
 // Mỗi lĩnh vực là một hình SVG nhỏ có hoạt ảnh CSS (lớp ah-* trong landing.css).
@@ -167,57 +168,8 @@ function Warning() {
   )
 }
 
-function Hub() {
-  const Gear = ({ x, y, c, label, icon, rev }) => (
-    <g transform={`translate(${x} ${y})`}>
-      <g className={'ah-gear' + (rev ? ' rev' : '')}>
-        {Array.from({ length: 10 }, (_, i) => <rect key={i} x="-5" y="-38" width="10" height="10" rx="2" fill={c} transform={`rotate(${i * 36})`} />)}
-        <circle r="30" fill={c} />
-        <circle r="22" fill="#0b1118" />
-      </g>
-      {icon}
-      <text y="52" textAnchor="middle" className="ah-gearlbl">{label}</text>
-    </g>
-  )
-  return (
-    <svg viewBox="0 0 360 300" className="ah-hub" overflow="visible" role="img"
-      aria-label="Bê tông tự cảm biến có hai điện cực, hộp vi mạch IoT, kết nối dữ liệu và trí tuệ nhân tạo">
-      {/* khối SSC */}
-      <g transform="translate(70 8)">
-        <polygon points="110,10 210,50 110,90 10,50" fill="#7dd3fc" opacity=".55" />
-        <polygon points="10,50 110,90 110,150 10,110" fill="#38bdf8" opacity=".45" />
-        <polygon points="110,90 210,50 210,110 110,150" fill="#0ea5e9" opacity=".5" />
-        <polyline points="10,50 110,90 210,50" fill="none" stroke="#e0f2fe" strokeOpacity=".6" />
-        {/* hai điện cực nằm ngang */}
-        <polygon className="ah-electrode" points="40,62 140,102 140,110 40,70" />
-        <polygon className="ah-electrode" points="40,88 140,128 140,136 40,96" style={{ animationDelay: '.4s' }} />
-        <line x1="40" y1="66" x2="14" y2="30" stroke="#fdba74" strokeWidth="1" />
-        <text x="-30" y="26" className="ah-tag">Điện cực</text>
-        <text x="40" y="170" className="ah-tag">Bê tông tự cảm biến</text>
-        <text x="150" y="150" className="ah-tag">Hộp vi mạch · IoT</text>
-        {[0, 0.6, 1.2].map(d => (
-          <circle key={d} r="2.6" className="ah-spark"><animateMotion dur="1.8s" begin={`-${d}s`} repeatCount="indefinite" path="M90 116 L90 90" /></circle>
-        ))}
-        {/* hộp vi mạch IoT */}
-        <g transform="translate(150 96)">
-          <rect width="54" height="36" rx="5" fill="#0f172a" stroke="#22d3ee" />
-          <rect x="8" y="9" width="18" height="18" rx="2" fill="#1e293b" stroke="#64748b" />
-          <circle cx="42" cy="12" r="4" className="ah-led" />
-          <g className="ah-wifi" fill="none" stroke="#22d3ee" strokeWidth="2.2" strokeLinecap="round">
-            <path d="M36 -6 a10 10 0 0 1 14 0" /><path d="M31 -12 a17 17 0 0 1 24 0" /><path d="M26 -18 a24 24 0 0 1 34 0" />
-          </g>
-        </g>
-        <path d="M110 120 C 130 128, 140 118, 150 114" stroke="#22d3ee" fill="none" className="ah-dash" />
-      </g>
-      <Gear x={70} y={216} c="#c2410c" label="Vi mạch" icon={<rect x="-10" y="-10" width="20" height="20" rx="3" fill="none" stroke="#fdba74" strokeWidth="2.5" />} />
-      <Gear x={180} y={230} c="#1d4ed8" label="Kết nối dữ liệu" rev icon={<text y="6" textAnchor="middle" fontSize="15" fontWeight="800" fill="#bfdbfe">IoT</text>} />
-      <Gear x={290} y={216} c="#1e3a8a" label="Trí tuệ nhân tạo" icon={<path d="M-9 4 a9 9 0 1 1 18 0 v6 h-18z M-4 -2 h8 M0 -6 v8" fill="none" stroke="#93c5fd" strokeWidth="2.2" />} />
-      <path d="M100 218 H 148 M212 218 H 258" stroke="#fbbf24" strokeWidth="2" className="ah-dash" />
-    </svg>
-  )
-}
-
 const APPS = [
+  ['weigh', 'Cân xe khi đang chạy', 'Cụm 4 cục SSC chôn dọc làn xe dưới lớp móng. Xe chạy qua, từng trục ép lần lượt lên các cục, hệ thống đọc tải và cộng ra trọng lượng xe mà không cần dừng xe.', RoadScene, 12000],
   ['bridge', 'Giám sát sức khỏe công trình cầu đường', 'Theo dõi ứng suất mặt cầu, trụ cầu khi xe chạy qua, phát hiện sớm hư hỏng.', Bridge],
   ['dam', 'Quan trắc đê điều, mái dốc', 'Cảm nhận áp lực nước và dịch chuyển mái dốc theo thời gian thực.', Dam],
   ['building', 'Quan trắc công trình dân dụng', 'Cột, dầm, sàn tự báo tải trọng và biến dạng trong suốt vòng đời công trình.', Buildings],
@@ -227,7 +179,7 @@ const APPS = [
   ['warn', 'Cảnh báo sớm thiên tai', 'Đánh giá rủi ro hạ tầng khi bão, lũ, sạt lở và gửi cảnh báo kịp thời.', Warning],
 ]
 
-const AUTO_MS = 6000
+const AUTO_MS = 6000 // cảnh cân xe dài hơn để xe kịp chạy qua cụm cục
 
 export function AppsHub() {
   const [idx, setIdx] = useState(0)
@@ -238,7 +190,7 @@ export function AppsHub() {
 
   useEffect(() => {
     if (paused) return
-    const id = setTimeout(() => go(idx + 1), AUTO_MS)
+    const id = setTimeout(() => go(idx + 1), APPS[idx][4] || AUTO_MS)
     return () => clearTimeout(id)
   }, [idx, paused, tick])
 
@@ -262,14 +214,12 @@ export function AppsHub() {
       </svg>
 
       <aside className="ah-side">
-        <Hub />
-        <p className="ah-caption">Công nghệ cảm biến diện rộng dựa trên vật liệu bê tông tích hợp <b>vi mạch</b> – <b>IoT</b> – <b>trí tuệ nhân tạo</b></p>
         <ol className="ah-tabs">
           {APPS.map(([key, title], i) => (
             <li key={key}>
               <button className={i === idx ? 'on' : ''} onClick={() => go(i)}>
                 <span className="ah-num">{String(i + 1).padStart(2, '0')}</span>{title}
-                {i === idx && <i key={tick} className={'ah-progress' + (paused ? ' paused' : '')} style={{ animationDuration: AUTO_MS + 'ms' }} />}
+                {i === idx && <i key={tick} className={'ah-progress' + (paused ? ' paused' : '')} style={{ animationDuration: (APPS[i][4] || AUTO_MS) + 'ms' }} />}
               </button>
             </li>
           ))}
@@ -278,8 +228,8 @@ export function AppsHub() {
 
       <div className="ah-stage" onPointerDown={onDown} onPointerUp={onUp} onPointerCancel={() => (start.current = null)}>
         <div className="ah-track" style={{ transform: `translateX(-${idx * 100}%)` }}>
-          {APPS.map(([key, title, desc, Art], i) => (
-            <section className={'ah-slide' + (i === idx ? ' on' : '')} key={key} aria-hidden={i !== idx}>
+          {APPS.map(([key, title, desc, Art, long], i) => (
+            <section className={'ah-slide' + (i === idx ? ' on' : '') + (long ? ' wide' : '')} key={key} aria-hidden={i !== idx}>
               <div className="ah-art"><Art /></div>
               <div className="ah-text">
                 <span className="ah-kicker">Ứng dụng {i + 1}/{n}</span>

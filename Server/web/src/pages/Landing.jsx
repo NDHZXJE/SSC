@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { api, auth } from '../api'
 import './landing.css'
 import { SensorScene } from './SensorScene'
-import { RoadScene } from './RoadScene'
 import { AppsHub } from './AppsHub'
 
 // Load cycle shared by the animated block and the signal trace (period 6 s).
@@ -189,16 +188,8 @@ export default function Landing({ openLogin = false }) {
         <span className="eyebrow">Ứng dụng</span>
         <h2>Một vật liệu, cả mạng lưới cảm biến cho hạ tầng</h2>
         <p className="apps-lead">Mỗi cục bê tông vừa chịu lực vừa là cảm biến. Ghép với vi mạch, kết nối IoT và trí tuệ nhân tạo,
-          cả công trình trở thành một mạng cảm biến diện rộng.</p>
+          cả công trình trở thành một mạng cảm biến diện rộng: từ cân xe đang chạy đến cảnh báo thiên tai.</p>
         <AppsHub />
-      </section>
-
-      <section id="road" className="road">
-        <span className="eyebrow">Ứng dụng · cân xe khi đang chạy</span>
-        <h2>Chôn dưới mặt đường, biết ngay xe nặng bao nhiêu</h2>
-        <p className="road-lead">Cụm 4 cục SSC chôn dọc làn xe dưới lớp móng, dây gom về tủ bên lề. Xe chạy qua, từng trục ép lần lượt lên các cục,
-          hệ thống đọc tải và cộng ra trọng lượng xe.</p>
-        <RoadScene />
       </section>
 
       <section id="how" className="how">
