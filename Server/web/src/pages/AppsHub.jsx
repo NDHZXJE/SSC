@@ -179,6 +179,10 @@ const APPS = [
   ['warn', 'Cảnh báo sớm thiên tai', 'Đánh giá rủi ro hạ tầng khi bão, lũ, sạt lở và gửi cảnh báo kịp thời.', Warning],
 ]
 
+// tên ngắn cho hàng tab
+const SHORT = { weigh: 'Cân xe', bridge: 'Cầu đường', dam: 'Đê điều, mái dốc', building: 'Dân dụng', traffic: 'Giao thông',
+  energy: 'Năng lượng', twin: 'Bản sao số', warn: 'Cảnh báo thiên tai' }
+
 const AUTO_MS = 6000 // cảnh cân xe dài hơn để xe kịp chạy qua cụm cục
 
 export function AppsHub() {
@@ -193,6 +197,13 @@ export function AppsHub() {
     const id = setTimeout(() => go(idx + 1), APPS[idx][4] || AUTO_MS)
     return () => clearTimeout(id)
   }, [idx, paused, tick])
+
+  // cuộn hàng tab để tab đang chọn luôn nằm trong khung (không cuộn cả trang)
+  const tabs = useRef(null)
+  useEffect(() => {
+    const ol = tabs.current, li = ol?.children[idx]
+    if (ol && li) ol.scrollTo({ left: li.offsetLeft - (ol.clientWidth - li.clientWidth) / 2, behavior: 'smooth' })
+  }, [idx])
 
   // vuốt ngang trên điện thoại
   const start = useRef(null)
@@ -214,11 +225,11 @@ export function AppsHub() {
       </svg>
 
       <aside className="ah-side">
-        <ol className="ah-tabs">
+        <ol className="ah-tabs" ref={tabs}>
           {APPS.map(([key, title], i) => (
             <li key={key}>
               <button className={i === idx ? 'on' : ''} onClick={() => go(i)}>
-                <span className="ah-num">{String(i + 1).padStart(2, '0')}</span>{title}
+                <span className="ah-num">{String(i + 1).padStart(2, '0')}</span>{SHORT[key] || title}
                 {i === idx && <i key={tick} className={'ah-progress' + (paused ? ' paused' : '')} style={{ animationDuration: (APPS[i][4] || AUTO_MS) + 'ms' }} />}
               </button>
             </li>
