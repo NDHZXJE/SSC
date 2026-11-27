@@ -25,13 +25,11 @@ const fmt = v => v.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFr
 function useRoadClock() {
   const [t, setT] = useState(0)
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setT((CUBE_X - AXLES[2] - START) / SPEED) // đứng yên lúc trục trước ở trên cục
-      return
-    }
+    // Máy tắt hiệu ứng: xe vẫn chạy nhưng chậm một nửa
+    const speed = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.5 : 1
     let id
     const t0 = performance.now()
-    const tick = now => { setT(Math.max(0, now - t0) / 1000); id = requestAnimationFrame(tick) }
+    const tick = now => { setT((Math.max(0, now - t0) / 1000) * speed); id = requestAnimationFrame(tick) }
     id = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(id)
   }, [])

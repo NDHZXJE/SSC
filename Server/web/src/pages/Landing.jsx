@@ -12,10 +12,10 @@ function useClock() {
   const [t, setT] = useState(0)
   useEffect(() => {
     let id, t0 = performance.now()
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const tick = now => { setT((now - t0) / 1000); id = requestAnimationFrame(tick) }
-    if (!reduce) id = requestAnimationFrame(tick)
-    else setT(PERIOD / 2)
+    // Máy tắt hiệu ứng: vẫn chạy nhưng chậm một nửa (CSS trong landing.css cũng chậm theo)
+    const speed = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.5 : 1
+    const tick = now => { setT(((now - t0) / 1000) * speed); id = requestAnimationFrame(tick) }
+    id = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(id)
   }, [])
   return t
