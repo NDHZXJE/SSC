@@ -101,3 +101,55 @@
 .sys i { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
 .sys.up i { background: #22c55e; box-shadow: 0 0 10px #22c55e; animation: blink 2s infinite; }
 .sys.down i { background: #ef4444; }
+
+/* ---- Hoạt ảnh cục bê tông trên máy nén (SensorScene.jsx) ---- */
+.lp-scene { width: min(100%, 460px); height: auto; display: block; overflow: visible; position: relative; filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .45)); }
+.lp-press { animation: lpPress 3.2s cubic-bezier(.45, 0, .25, 1) infinite; }
+@keyframes lpPress { 0%, 100% { transform: translateY(-26px); } 45%, 60% { transform: translateY(0); } }
+.lp-arrow line, .lp-arrow polyline { stroke: #fbbf24; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.lp-arrow { filter: drop-shadow(0 0 6px rgba(251, 191, 36, .6)); }
+.lp-topface { animation: lpSquash 3.2s cubic-bezier(.45, 0, .25, 1) infinite; }
+@keyframes lpSquash { 0%, 100% { filter: brightness(1); } 45%, 60% { filter: brightness(1.12); } }
+.lp-stress { transform-box: fill-box; transform-origin: center; animation: lpStress 3.2s cubic-bezier(.45, 0, .25, 1) infinite; }
+@keyframes lpStress { 0%, 100% { opacity: .15; transform: scale(.7); } 45%, 60% { opacity: 1; transform: scale(1.15); } }
+.lp-electrode line { stroke: #cbd5e1; stroke-width: 4; stroke-dasharray: 2 5; stroke-linecap: round; }
+.lp-spark { fill: #a5f3fc; filter: drop-shadow(0 0 4px #22d3ee); }
+.lp-wire { fill: none; stroke: #22d3ee; stroke-width: 2; stroke-opacity: .75; stroke-dasharray: 6 6; animation: lpDash 1s linear infinite; }
+@keyframes lpDash { to { stroke-dashoffset: -12; } }
+.lp-led { fill: #34d399; animation: lpBlink 1s steps(2) infinite; }
+@keyframes lpBlink { 50% { fill: #064e3b; } }
+.lp-wifi path { opacity: .15; animation: lpWifi 1.8s infinite; }
+.lp-wifi path:nth-child(2) { animation-delay: .25s; } .lp-wifi path:nth-child(3) { animation-delay: .5s; }
+@keyframes lpWifi { 30% { opacity: 1; } 70%, 100% { opacity: .15; } }
+
+/* ---- Cục chôn dưới đường, xe chạy qua (RoadScene.jsx) ---- */
+.road { padding: 40px clamp(16px, 5vw, 64px) 20px; max-width: 1200px; margin: 0 auto; }
+.road h2 { font-size: clamp(24px, 3vw, 34px); margin: 10px 0 8px; }
+.road-lead { color: var(--l-muted); max-width: 720px; margin: 0 0 22px; line-height: 1.6; }
+.road-card { background: #0d151dcc; border: 1px solid var(--l-line); border-radius: 18px; padding: 14px; box-shadow: 0 30px 80px #00000066; }
+.road-svg { width: 100%; height: auto; display: block; border-radius: 12px; background: linear-gradient(#0f1b26, #0b0f14 40%); }
+.rd-label { fill: #cbd5e1; font-size: 13px; opacity: .7; }
+.rd-label.strong { fill: #22d3ee; opacity: 1; font-weight: 700; }
+.rd-callout line { stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.rd-cone line { stroke: #fbbf24; stroke-width: 1.6; stroke-dasharray: 4 4; }
+.rd-electrode { stroke: #d98a4a; stroke-width: 4; stroke-linecap: round; }
+.road-read { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 12px; margin-top: 12px; }
+.road-read > div { background: #0b1118; border: 1px solid var(--l-line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.road-read small { color: var(--l-muted); font-size: 12px; }
+.road-read b { font-size: 22px; }
+.road-meter b span { font-size: 13px; color: var(--l-muted); font-weight: 400; }
+.road-bar { height: 8px; border-radius: 4px; background: #1e293b; overflow: hidden; }
+.road-bar i { display: block; height: 100%; background: linear-gradient(90deg, #22d3ee, #fbbf24); }
+.road-axles > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.axle { font-size: 13px; color: var(--l-muted); border: 1px solid var(--l-line); border-radius: 99px; padding: 4px 10px; transition: all .3s; }
+.axle b { font-size: 13px; }
+.axle.on { color: var(--l-text); border-color: #fbbf24; box-shadow: 0 0 12px #fbbf2433; }
+.road-total b { color: var(--l-muted); transition: color .3s; }
+.road-total span { font-size: 12px; color: var(--l-muted); }
+.road-total.on { border-color: #22c55e; box-shadow: 0 0 18px #22c55e33; }
+.road-total.on b { color: #4ade80; }
+.road-note { color: var(--l-muted); font-size: 12px; margin: 10px 4px 0; opacity: .8; }
+@media (max-width: 760px) { .road-read { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .lp-press, .lp-topface, .lp-stress, .lp-wire, .lp-led, .lp-wifi path { animation: none; }
+}

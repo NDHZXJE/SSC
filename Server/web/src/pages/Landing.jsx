@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, auth } from '../api'
 import './landing.css'
+import { SensorScene } from './SensorScene'
+import { RoadScene } from './RoadScene'
 
 // Load cycle shared by the animated block and the signal trace (period 6 s).
-const PERIOD = 6
+const PERIOD = 3.2 // cùng nhịp với hoạt ảnh máy nén (lpPress trong landing.css)
 const loadAt = t => 0.5 - 0.5 * Math.cos((2 * Math.PI * t) / PERIOD) // 0..1
-
-// Fixed pseudo-random fibre network inside the block (deterministic).
-const FIBRES = Array.from({ length: 26 }, (_, i) => {
-  const r = k => (Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1
-  const a = Math.abs
-  const x = 70 + a(r(1)) * 220, y = 150 + a(r(2)) * 120
-  const ang = a(r(3)) * Math.PI, len = 26 + a(r(4)) * 30
-  return { x1: x, y1: y, x2: x + Math.cos(ang) * len, y2: y + Math.sin(ang) * len * 0.6, d: a(r(5)) * 3 }
-})
 
 function useClock() {
   const [t, setT] = useState(0)
@@ -26,72 +19,6 @@ function useClock() {
     return () => cancelAnimationFrame(id)
   }, [])
   return t
-}
-
-function BlockScene({ t }) {
-  const L = loadAt(t)
-  const press = 18 * L // plate travel (px)
-  return (
-    <svg viewBox="0 0 360 318" className="scene" role="img" aria-label="Cục bê tông tự cảm biến chịu lực nén và phát tín hiệu điện">
-      <defs>
-        <linearGradient id="top" x1="0" x2="1"><stop offset="0" stopColor="#8a929c" /><stop offset="1" stopColor="#6c737c" /></linearGradient>
-        <linearGradient id="front" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5b626b" /><stop offset="1" stopColor="#3d434a" /></linearGradient>
-        <linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4a5057" /><stop offset="1" stopColor="#30353b" /></linearGradient>
-        <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-        <clipPath id="blockclip"><polygon points="60,112 180,76 320,112 320,264 200,300 60,264" /></clipPath>
-        <pattern id="speckle" width="14" height="14" patternUnits="userSpaceOnUse">
-          <circle cx="3" cy="4" r="0.9" fill="#ffffff22" /><circle cx="10" cy="9" r="0.7" fill="#00000033" /><circle cx="6" cy="12" r="0.6" fill="#ffffff18" />
-        </pattern>
-      </defs>
-
-      {/* Force arrow + press plate */}
-      <g transform={`translate(0 ${press})`}>
-        <g className="arrow" opacity={0.35 + 0.65 * L}>
-          <line x1="180" y1="8" x2="180" y2="58" stroke="#ffb020" strokeWidth="5" strokeLinecap="round" />
-          <path d="M166 50 L180 72 L194 50 Z" fill="#ffb020" />
-          <text x="200" y="34" fill="#ffb020" fontSize="18" fontWeight="700">F</text>
-        </g>
-        <polygon points="60,92 180,56 320,92 200,128" fill="#c9ced4" opacity="0.9" />
-        <polygon points="60,92 200,128 200,138 60,102" fill="#9aa1a9" />
-        <polygon points="200,128 320,92 320,102 200,138" fill="#7d848c" />
-      </g>
-
-      {/* Concrete block (slightly squashed with load) */}
-      <g transform={`translate(0 ${140 + press * 0.15}) scale(1 ${1 - 0.02 * L}) translate(0 -140)`}>
-        <polygon points="60,112 180,76 320,112 200,148" fill="url(#top)" />
-        <polygon points="60,112 200,148 200,300 60,264" fill="url(#front)" />
-        <polygon points="200,148 320,112 320,264 200,300" fill="url(#side)" />
-        <polygon points="60,112 200,148 200,300 60,264" fill="url(#speckle)" />
-        <polygon points="200,148 320,112 320,264 200,300" fill="url(#speckle)" />
-
-        {/* Carbon fibre network: glows brighter as compression closes the contacts */}
-        <g filter="url(#glow)" clipPath="url(#blockclip)">
-          {FIBRES.map((f, i) => {
-            const pulse = 0.5 + 0.5 * Math.sin(t * 4 + f.d * 2)
-            return <line key={i} x1={f.x1} y1={f.y1} x2={f.x2} y2={f.y2}
-              stroke="#22d3ee" strokeWidth="1.6" strokeLinecap="round" opacity={0.25 + 0.55 * L * pulse + 0.15 * pulse} />
-          })}
-        </g>
-
-        {/* Copper electrodes */}
-        <polygon points="88,101 94,103 94,272 88,270" fill="#d98a4a" />
-        <polygon points="166,121 172,123 172,292 166,290" fill="#d98a4a" />
-      </g>
-
-      {/* Wires to the node */}
-      <path d="M91 101 C 80 50, 30 50, 22 118" stroke="#d98a4a" strokeWidth="2" fill="none" />
-      <path d="M169 121 C 160 40, 50 20, 30 118" stroke="#d98a4a" strokeWidth="2" fill="none" />
-      <g className="node">
-        <rect x="6" y="118" width="40" height="26" rx="4" fill="#0f2a33" stroke="#22d3ee" strokeWidth="1.2" />
-        <text x="26" y="135" textAnchor="middle" fontSize="9" fill="#22d3ee" fontWeight="700">IoT</text>
-      </g>
-      {[0, 1, 2].map(k => (
-        <circle key={k} r="3" fill="#22d3ee" filter="url(#glow)">
-          <animateMotion dur="1.6s" repeatCount="indefinite" begin={`${k * 0.53}s`} path="M91 101 C 80 50, 30 50, 22 118" />
-        </circle>
-      ))}
-    </svg>
-  )
 }
 
 function SignalTrace({ t }) {
@@ -225,9 +152,17 @@ export default function Landing({ openLogin = false }) {
         </div>
         <div className="hero-visual">
           <div className="glow-bg" style={{ opacity: 0.35 + 0.4 * L }} />
-          <BlockScene t={t} />
+          <SensorScene />
           <SignalTrace t={t} />
         </div>
+      </section>
+
+      <section id="road" className="road">
+        <span className="eyebrow">Ứng dụng · cân xe khi đang chạy</span>
+        <h2>Chôn dưới mặt đường, biết ngay xe nặng bao nhiêu</h2>
+        <p className="road-lead">Cục SSC chôn dưới lớp móng đường, dây nối về tủ bên lề. Xe chạy qua, từng trục ép lên cục,
+          hệ thống đọc tải và cộng ra trọng lượng xe.</p>
+        <RoadScene />
       </section>
 
       <section id="how" className="how">
