@@ -4,6 +4,9 @@ Mỗi giây 1 gói JSON lên ssc/<id>/data. Tải nén chạy theo chu kỳ (0 -
 để thử biểu đồ và trang hiệu chuẩn. Mô hình vật liệu theo cấp phối F2:
 rho0 ~ 12 Ω·m, K = -0.015*rho0 + 0.20 (Ω·m/MPa).
 
+Ghép mạch: khi chưa ghép, mỗi node in ra mã 6 số và gửi kèm trong gói status ("pair").
+Nhập mã đó ở trang Thiết bị → Thêm mạch đọc. Server báo lại qua ssc/<id>/pair.
+
 Chạy:  python sim.py --host localhost --devices 3
 """
 import argparse
@@ -36,12 +39,31 @@ def run_device(idx: int, host: str, port: int, period_s: float, max_kn: float, l
     dev = f"ssc-sim{idx:02d}"
     rho0 = 10 + 2 * idx + random.uniform(-0.5, 0.5)
     k = -0.015 * rho0 + 0.20
+    code = f"{random.randint(0, 999999):06d}"   # mã ghép, mỗi lần khởi động một mã mới
+    status = {"online": True, "fw": "sim-0.2", "ip": "127.0.0.1", "rssi": -55}
+
+    def send_status(paired: bool):
+        st = dict(status) if paired else {**status, "pair": code}
+        c.publish(f"ssc/{dev}/status", json.dumps(st), qos=1, retain=True)
+        print(f"{dev}: đã ghép" if paired else f"{dev}: chưa ghép, mã ghép {code}", flush=True)
+
+    def on_connect(client, userdata, flags, reason, props):
+        client.subscribe(f"ssc/{dev}/pair", qos=1)
+        send_status(False)
+
+    def on_message(client, userdata, msg):
+        try:
+            paired = bool(msg.payload) and json.loads(msg.payload).get("paired") is True
+        except ValueError:
+            paired = False
+        send_status(paired)
+
     c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=dev)
+    c.on_connect = on_connect
+    c.on_message = on_message
     c.will_set(f"ssc/{dev}/status", json.dumps({"online": False}), qos=1, retain=True)
     c.connect(host, port, 30)
     c.loop_start()
-    c.publish(f"ssc/{dev}/status", json.dumps({"online": True, "fw": "sim-0.1", "ip": "127.0.0.1", "rssi": -55}),
-              qos=1, retain=True)
     seq = 0
     t_next = time.time()
     while True:

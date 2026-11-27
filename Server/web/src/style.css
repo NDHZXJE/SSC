@@ -112,3 +112,14 @@ label.inline { flex-direction: row; align-items: center; gap: 8px; color: var(--
 .entry .msg-note { margin-top: 6px; font-size: 12.5px; color: var(--good); }
 .entry .chat-in { display: flex; gap: 8px; align-items: stretch; }
 .entry .chat-in textarea { flex: 1; }
+
+/* ---- Ghép mạch đọc bằng mã 6 số ---- */
+.pair { border-color: var(--accent); }
+.pair-steps { margin: 4px 0 16px; padding-left: 20px; line-height: 1.7; }
+.code6 { display: flex; gap: 10px; }
+.code6 input { width: 52px; height: 62px; text-align: center; font: 600 28px ui-monospace, SFMono-Regular, Consolas, monospace;
+  border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); padding: 0; }
+.code6 input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.code6 input:nth-child(3) { margin-right: 12px; }
+.pill-count { margin-left: 8px; font-size: 12px; background: rgba(255, 255, 255, .25); padding: 1px 8px; border-radius: 999px; }
+@media (max-width: 480px) { .code6 { gap: 6px; } .code6 input { width: 42px; height: 52px; font-size: 22px; } }

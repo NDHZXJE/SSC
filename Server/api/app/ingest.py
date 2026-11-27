@@ -7,12 +7,15 @@ Topics (device id = e.g. ssc-a1b2c3):
                     "temp": 28.4, "rh": 61.0}
   ssc/<id>/status  node -> server (retained, LWT): {"online": true, "fw": "0.1.0", "ip": "...", "rssi": -58}
   ssc/<id>/config  server -> node (retained): {"rate_sps": 100, "pga": 1, ...}
+  ssc/<id>/pair    server -> node (retained): {"paired": true} sau khi quản trị nhập đúng mã 6 số.
+                   Node chưa ghép gửi thêm "pair": "123456" trong gói status và hiện mã đó cho người dùng.
 """
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
+import re
 import time
 from collections import deque
 from datetime import datetime, timezone
@@ -25,6 +28,7 @@ from . import hybrid
 from .model import ActiveModel, rho_from_rs, rs_from_voltages
 
 log = logging.getLogger("ssc.ingest")
+PAIR_RE = re.compile(r"^\d{6}$")
 COLUMNS = ["time", "sensor_id", "us", "up", "rs", "rho", "stress", "temp", "rh", "stress_lo", "stress_hi"]
 
 
@@ -81,6 +85,12 @@ class Ingest:
     def publish_config(self, device_id: str, cfg: dict):
         if self.client:
             self.client.publish(f"ssc/{device_id}/config", json.dumps(cfg), qos=1, retain=True)
+
+    def publish_paired(self, device_id: str, paired: bool):
+        """Báo cho node biết đã ghép (retained). Bỏ ghép thì xoá tin retained để node hiện lại mã."""
+        if self.client:
+            payload = json.dumps({"paired": True}) if paired else b""
+            self.client.publish(f"ssc/{device_id}/pair", payload, qos=1, retain=True)
 
     # ---------- paho callbacks (network thread) ----------
     def _on_connect(self, client, userdata, flags, reason, props):
@@ -167,6 +177,9 @@ class Ingest:
             for k in ("fw", "ip", "rssi"):
                 if k in status:
                     s[k] = status[k]
+            code = str(status.get("pair", "")).strip()
+            if PAIR_RE.match(code):
+                s["pair"] = code
 
     async def _handle_data(self, device_id: str, d: dict):
         self._mark_seen(device_id)
@@ -227,11 +240,14 @@ class Ingest:
             async with db.pool.acquire() as con:
                 await con.copy_records_to_table("samples", records=batch, columns=COLUMNS)
         if self.seen:
-            rows = [(k, v.get("t"), v.get("fw"), v.get("ip"), v.get("rssi")) for k, v in self.seen.items() if v.get("t")]
+            rows = [(k, v.get("t"), v.get("fw"), v.get("ip"), v.get("rssi"), v.get("pair"))
+                    for k, v in self.seen.items() if v.get("t")]
             async with db.pool.acquire() as con:
                 await con.executemany(
-                    """INSERT INTO devices (id, last_seen, fw, ip, rssi) VALUES ($1, $2, coalesce($3, ''), coalesce($4, ''), $5)
+                    """INSERT INTO devices (id, last_seen, fw, ip, rssi, pair_code)
+                       VALUES ($1, $2, coalesce($3, ''), coalesce($4, ''), $5, $6)
                        ON CONFLICT (id) DO UPDATE SET last_seen = EXCLUDED.last_seen,
+                         pair_code = CASE WHEN $6 IS NULL OR devices.paired THEN devices.pair_code ELSE EXCLUDED.pair_code END,
                          fw = CASE WHEN $3 IS NULL THEN devices.fw ELSE EXCLUDED.fw END,
                          ip = CASE WHEN $4 IS NULL THEN devices.ip ELSE EXCLUDED.ip END,
                          rssi = coalesce(EXCLUDED.rssi, devices.rssi)""",

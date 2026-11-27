@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS devices (
     config      JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Ghép mạch bằng mã 6 số: node chưa ghép gửi "pair" trong gói status, quản trị nhập mã đó trên web.
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS paired BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS pair_code TEXT;
+UPDATE devices SET paired = true WHERE sensor_id IS NOT NULL AND NOT paired;  -- node đã gán cục từ trước coi như đã ghép
 
 -- Raw samples, 100 per second per sensor
 CREATE TABLE IF NOT EXISTS samples (

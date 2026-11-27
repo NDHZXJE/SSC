@@ -27,7 +27,8 @@ docker compose up -d --build
 ## Quy trình dùng
 
 1. **Quản trị → Thêm cục**: mã cục, cấp phối (F2), diện tích điện cực A, khoảng cách L, diện tích chịu nén.
-2. **Thiết bị**: node mới tự hiện khi gửi gói đầu tiên. Gán node cho cục và nhập R1 đo thực bằng đồng hồ.
+2. **Thiết bị → Thêm mạch đọc**: bật mạch, nhập mã 6 số hiện trên mạch để ghép. Gán mạch cho cục và nhập R1 đo thực bằng đồng hồ
+   (có thể làm ngay lúc ghép). Mạch chưa ghép không hiện trong danh sách và không ghi dữ liệu.
 3. **Hiệu chuẩn**: chọn cục → Bắt đầu lần mới → đặt cục lên máy nén. Ở mỗi bậc tải, nhập lực (kN) và bấm
    **Ghi bậc** (lấy trung bình ρ vài giây gần nhất) → **Khớp mô hình** → kiểm tra R² → **Duyệt và dùng**.
    Không có máy nén: **Tạo nhanh từ Eq.14** (đo ρ(0) lúc không tải, lấy K theo Eq. 14 của bài Measurement 2026).
@@ -48,6 +49,18 @@ docker compose up -d --build
 - `us`: điện áp hai đầu SSC (V) đã quy đổi qua hệ số chia áp. `up`: điện áp nguồn (V), một số hoặc mảng 100 giá trị.
 - `ssc/<id>/status` (retained, đặt làm LWT với `{"online": false}`): `{"online": true, "fw": "0.1.0", "ip": "...", "rssi": -58}`.
 - Server gửi cấu hình xuống `ssc/<id>/config` (retained).
+
+### Ghép mạch bằng mã 6 số
+
+1. Khi chưa ghép, firmware tạo một mã 6 số, hiện cho người dùng (màn hình, đèn/nhãn dán hoặc Serial Monitor)
+   và gửi kèm trong gói status: `{"online": true, "fw": "...", "ip": "...", "rssi": -58, "pair": "482913"}`.
+2. Firmware subscribe `ssc/<id>/pair`. Quản trị nhập đúng mã ở trang **Thiết bị → Thêm mạch đọc**, server gửi
+   `{"paired": true}` (retained) lên topic này. Firmware thôi hiện mã và gửi lại status không có `pair`.
+3. Bỏ ghép (nút **Bỏ ghép** trên web): server xoá tin retained trên `ssc/<id>/pair` (gói rỗng), firmware hiện lại mã.
+
+Mã chỉ có hiệu lực khi mạch đang online. Nhập sai 10 lần trong 10 phút thì server tạm khoá. Gợi ý cho firmware ESP32:
+mã cố định theo MAC để in được nhãn dán, ví dụ `uint32_t code = (uint32_t)(ESP.getEfuseMac() * 2654435761ULL % 1000000ULL);`
+rồi `snprintf(buf, 7, "%06u", code)`.
 
 ## Cách tính
 
