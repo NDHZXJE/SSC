@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from . import config, db
 from .auth import admin_user, current_user, ensure_admin, hash_password, make_token, verify_password
-from . import ai_api
+from . import ai_api, ota
 from .ingest import ingest
 from .model import fit_linear, k_from_rho0, rho0_to_ref
 
@@ -214,21 +214,73 @@ class DevicePatch(BaseModel):
 
 @app.get("/api/devices")
 async def list_devices(_=Depends(current_user)):
+    """Chỉ các mạch đã ghép. Mạch mới phải được ghép bằng mã 6 số (POST /api/devices/pair)."""
     async with db.pool.acquire() as con:
+        await ota.expire(con)
         rows = await con.fetch(
             """SELECT d.*, s.code AS sensor_code FROM devices d
-               LEFT JOIN sensors s ON s.id = d.sensor_id ORDER BY d.id""")
+               LEFT JOIN sensors s ON s.id = d.sensor_id WHERE d.paired ORDER BY d.id""")
     out = []
     for r in rows:
         item = _row(r)
+        item.pop("pair_code", None)
+        item["ota"] = ota.device_ota(r["ota"])
         item["online"] = _online(r["last_seen"])
         out.append(item)
     return out
 
 
+@app.get("/api/devices/pending")
+async def pending_devices(_=Depends(current_user)):
+    """Số mạch đang bật, đã gửi mã ghép nhưng chưa được ghép (không trả mã)."""
+    async with db.pool.acquire() as con:
+        rows = await con.fetch("SELECT last_seen FROM devices WHERE NOT paired AND pair_code IS NOT NULL")
+    return {"count": sum(1 for r in rows if _online(r["last_seen"]))}
+
+
+class PairIn(BaseModel):
+    code: str = Field(pattern=r"^\d{6}$")
+    sensor_id: int | None = None
+    rr_ohm: float | None = Field(default=None, gt=0)
+
+
+_pair_fails: list[float] = []   # thời điểm nhập sai, chặn dò mã
+
+
+@app.post("/api/devices/pair")
+async def pair_device(body: PairIn, _=Depends(admin_user)):
+    now = time.time()
+    _pair_fails[:] = [t for t in _pair_fails if now - t < 600]
+    if len(_pair_fails) >= 10:
+        raise HTTPException(429, "Nhập sai quá nhiều lần. Đợi vài phút rồi thử lại.")
+    async with db.pool.acquire() as con:
+        async with con.transaction():
+            rows = await con.fetch(
+                "SELECT id, last_seen FROM devices WHERE NOT paired AND pair_code = $1 FOR UPDATE", body.code)
+            rows = [r for r in rows if _online(r["last_seen"])]
+            if not rows:
+                _pair_fails.append(now)
+                raise HTTPException(404, "Không có mạch nào đang chờ ghép với mã này. Kiểm tra mạch đã bật, "
+                                         "đã vào Wi-Fi và mã đúng như trên mạch.")
+            if len(rows) > 1:
+                raise HTTPException(409, "Có nhiều mạch trùng mã này. Khởi động lại một mạch để nó tạo mã khác.")
+            did = rows[0]["id"]
+            await con.execute("UPDATE devices SET paired = true, pair_code = NULL WHERE id = $1", did)
+            if body.sensor_id is not None:
+                await con.execute("UPDATE devices SET sensor_id = NULL WHERE sensor_id = $1", body.sensor_id)
+                await con.execute("UPDATE devices SET sensor_id = $2 WHERE id = $1", did, body.sensor_id)
+            if body.rr_ohm is not None:
+                await con.execute("UPDATE devices SET rr_ohm = $2 WHERE id = $1", did, body.rr_ohm)
+    ingest.publish_paired(did, True)
+    ingest.invalidate()
+    return {"ok": True, "id": did}
+
+
 @app.patch("/api/devices/{did}")
 async def patch_device(did: str, body: DevicePatch, _=Depends(admin_user)):
     async with db.pool.acquire() as con:
+        if not await con.fetchval("SELECT paired FROM devices WHERE id = $1", did):
+            raise HTTPException(404, "Mạch chưa được ghép")
         async with con.transaction():
             if "sensor_id" in body.model_fields_set:
                 if body.sensor_id is not None:
@@ -252,6 +304,7 @@ async def device_config(did: str, cfg: dict, _=Depends(admin_user)):
 async def delete_device(did: str, _=Depends(admin_user)):
     async with db.pool.acquire() as con:
         await con.execute("DELETE FROM devices WHERE id = $1", did)
+    ingest.publish_paired(did, False)   # mạch quay về trạng thái chờ ghép, hiện lại mã
     ingest.invalidate()
     return {"ok": True}
 
@@ -504,6 +557,7 @@ def _nanmean(a):
     return None if np.all(np.isnan(a)) else float(np.nanmean(a))
 
 
+app.include_router(ota.router)      # nạp firmware OTA: /api/firmware, /api/ota/<token>
 app.include_router(ai_api.router)   # mô hình AI lai: /api/ai/*, /api/sensors/{id}/models/hybrid, ...
 
 

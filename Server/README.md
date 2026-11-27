@@ -27,7 +27,9 @@ docker compose up -d --build
 ## Quy trình dùng
 
 1. **Quản trị → Thêm cục**: mã cục, cấp phối (F2), diện tích điện cực A, khoảng cách L, diện tích chịu nén.
-2. **Thiết bị**: node mới tự hiện khi gửi gói đầu tiên. Gán node cho cục và nhập R1 đo thực bằng đồng hồ.
+2. **Thiết bị → Thêm mạch đọc**: bật mạch, nhập mã 6 số hiện trên mạch để ghép. Gán mạch cho cục và nhập R1 đo thực bằng đồng hồ
+   (có thể làm ngay lúc ghép). Mạch chưa ghép không hiện trong danh sách và không ghi dữ liệu.
+   Cập nhật firmware cho mạch: **Thiết bị → Firmware (OTA)**, tải file `.bin` lên rồi chọn mạch để nạp.
 3. **Hiệu chuẩn**: chọn cục → Bắt đầu lần mới → đặt cục lên máy nén. Ở mỗi bậc tải, nhập lực (kN) và bấm
    **Ghi bậc** (lấy trung bình ρ vài giây gần nhất) → **Khớp mô hình** → kiểm tra R² → **Duyệt và dùng**.
    Không có máy nén: **Tạo nhanh từ Eq.14** (đo ρ(0) lúc không tải, lấy K theo Eq. 14 của bài Measurement 2026).
@@ -48,6 +50,42 @@ docker compose up -d --build
 - `us`: điện áp hai đầu SSC (V) đã quy đổi qua hệ số chia áp. `up`: điện áp nguồn (V), một số hoặc mảng 100 giá trị.
 - `ssc/<id>/status` (retained, đặt làm LWT với `{"online": false}`): `{"online": true, "fw": "0.1.0", "ip": "...", "rssi": -58}`.
 - Server gửi cấu hình xuống `ssc/<id>/config` (retained).
+
+### Ghép mạch bằng mã 6 số
+
+1. Khi chưa ghép, firmware tạo một mã 6 số, hiện cho người dùng (màn hình, đèn/nhãn dán hoặc Serial Monitor)
+   và gửi kèm trong gói status: `{"online": true, "fw": "...", "ip": "...", "rssi": -58, "pair": "482913"}`.
+2. Firmware subscribe `ssc/<id>/pair`. Quản trị nhập đúng mã ở trang **Thiết bị → Thêm mạch đọc**, server gửi
+   `{"paired": true}` (retained) lên topic này. Firmware thôi hiện mã và gửi lại status không có `pair`.
+3. Bỏ ghép (nút **Bỏ ghép** trên web): server xoá tin retained trên `ssc/<id>/pair` (gói rỗng), firmware hiện lại mã.
+
+Mã chỉ có hiệu lực khi mạch đang online. Nhập sai 10 lần trong 10 phút thì server tạm khoá. Gợi ý cho firmware ESP32:
+mã cố định theo MAC để in được nhãn dán, ví dụ `uint32_t code = (uint32_t)(ESP.getEfuseMac() * 2654435761ULL % 1000000ULL);`
+rồi `snprintf(buf, 7, "%06u", code)`.
+
+### Nạp firmware OTA qua server
+
+Trang **Thiết bị → Firmware (OTA)** (quản trị):
+
+1. `idf.py build` rồi tải lên `build/esp32s3-meter.bin` (ảnh app, không phải `bootloader.bin` hay `.elf`). Server đọc
+   `esp_app_desc_t` trong ảnh để lấy phiên bản (`PROJECT_VER` trong `CMakeLists.txt`), tên dự án, chip, ngày build.
+   Nhớ tăng `PROJECT_VER` mỗi lần build bản mới, server dựa vào nó để biết mạch đã lên bản mới chưa.
+2. Bấm **Nạp…**, chọn mạch (mặc định chọn các mạch online chưa chạy bản này), **Nạp cho N mạch**. Cột Firmware hiện
+   tiến độ tải, rồi "đang khởi động lại", rồi "Đã nạp".
+
+Giao thức (firmware `ssc-1.1.0` trở lên, xem `Device/firmware/components/ssc_node/ssc_ota.c`):
+
+- Firmware báo `"ota": 1` trong gói status. Bản cũ hơn (không có cờ này) phải nạp bằng cáp hoặc `POST /update` một lần.
+- Server → `ssc/<id>/ota` (QoS 1, không retained):
+  `{"job": "a1b2c3d4", "url": "/api/ota/<token>", "version": "ssc-1.1.0", "size": 1201504, "sha256": "..."}`.
+  `url` bắt đầu bằng `/` thì mạch tải từ `http://<máy chủ trong địa chỉ MQTT>:8000<url>`. Đặt `OTA_BASE_URL` trong
+  `.env` (vd `https://ssc.example.com`) để gửi địa chỉ đầy đủ. Token chỉ dùng được trong lúc lần nạp đó đang chạy.
+- Mạch → `ssc/<id>/ota/state`: `{"job": "...", "state": "downloading|rebooting|error|rejected", "pct": 40, "msg": "..."}`.
+- Mạch từ chối ảnh khác chip hoặc khác tên dự án, và ảnh hỏng (`esp_ota_end` kiểm tra SHA-256 gắn trong ảnh).
+- Sau khi khởi động lại, bản mới chỉ được giữ nếu kết nối được MQTT trong 5 phút; không thì mạch tự quay về bản cũ
+  (rollback) và web báo "bản mới bị trả về bản cũ". Lần nạp không phản hồi quá 3–10 phút thì web báo lỗi, nạp lại được.
+
+Thử không cần mạch thật: bộ giả lập (`--profile sim`) cũng nhận lệnh OTA, tải ảnh thật, kiểm tra sha256 rồi báo phiên bản mới.
 
 ## Cách tính
 
@@ -123,7 +161,7 @@ Có bước kiểm tra trước khi lưu, danh sách dữ liệu đã lưu và n
 ### Trợ lý AI ở trang Nhập dữ liệu
 Ô "Bối cảnh thí nghiệm" + khung chat: người dùng mô tả thí nghiệm và kể/dán số liệu, trợ lý chọn loại dữ liệu và điền sẵn vào form
 (không tự lưu; người dùng xem mục Kiểm tra rồi bấm Lưu). Bối cảnh và hội thoại được lưu vào bảng `experiment_notes`.
-- Mặc định dùng model nhỏ chạy trên máy chủ qua Ollama (dịch vụ `ollama` trong docker-compose). Lần đầu: `docker compose exec ollama ollama pull qwen2.5:7b`.
+- Mặc định dùng Gemini (AI_CHAT_PROVIDER=openai, cần LLM_API_KEY). Muốn chạy model nhỏ ngay trên máy chủ thì đặt `AI_CHAT_PROVIDER=ollama`, chạy `docker compose --profile ollama up -d` rồi `docker compose exec ollama ollama pull qwen2.5:7b`.
   Máy chậm thì dùng `OLLAMA_MODEL=qwen2.5:3b`.
 - Hoặc dùng Claude API: đặt `AI_CHAT_PROVIDER=claude` và `ANTHROPIC_API_KEY` trong `.env` (model mặc định `claude-haiku-5-5`, đổi bằng `CLAUDE_MODEL`).
 - Hoặc dùng API miễn phí kiểu OpenAI, ví dụ Google Gemini: lấy khoá ở https://aistudio.google.com/apikey rồi đặt trong `.env`:

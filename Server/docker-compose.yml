@@ -45,7 +45,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       # Trợ lý chat ở trang Nhập dữ liệu: ollama (model nhỏ chạy trên máy chủ), openai (API kiểu OpenAI:
       # Gemini miễn phí, Groq, OpenRouter...) hoặc claude (cần ANTHROPIC_API_KEY)
-      AI_CHAT_PROVIDER: ${AI_CHAT_PROVIDER:-ollama}
+      AI_CHAT_PROVIDER: ${AI_CHAT_PROVIDER:-openai}
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -53,12 +53,16 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash-lite}
+      # OTA: để trống thì mạch tải firmware từ http://<máy chủ MQTT>:8000. Đặt địa chỉ đầy đủ nếu khác.
+      OTA_BASE_URL: ${OTA_BASE_URL:-}
     ports:
       - "8000:8000"
 
   # Model chat nhỏ chạy ngay trên máy chủ (CPU được, không cần Internet sau khi tải model).
+  # Chỉ cần khi AI_CHAT_PROVIDER=ollama. Bật bằng: docker compose --profile ollama up -d
   # Lần đầu tải model:  docker compose exec ollama ollama pull qwen2.5:7b
   ollama:
+    profiles: ["ollama"]
     image: ollama/ollama:0.12.6
     restart: unless-stopped
     volumes:
