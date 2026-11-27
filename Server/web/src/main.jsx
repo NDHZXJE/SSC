@@ -2,7 +2,6 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
 import { auth } from './api'
-import Login from './pages/Login'
 import Landing from './pages/Landing'
 import Overview from './pages/Overview'
 import SensorDetail from './pages/SensorDetail'
@@ -24,8 +23,7 @@ function useHash() {
 function App() {
   const hash = useHash()
   const user = auth.user
-  if (hash === '#/login') return <Login />
-  if (!auth.token) return <Landing />
+  if (!auth.token) return <Landing openLogin={hash === '#/login'} />
 
   const [, page, arg] = hash.slice(1).split('/')
   let body
@@ -52,7 +50,7 @@ function App() {
         </nav>
         <span className="who">
           {user?.username} ({user?.role === 'admin' ? 'quản trị' : 'người xem'})
-          <button className="link" onClick={() => { auth.clear(); location.hash = '#/login' }}>Đăng xuất</button>
+          <button className="link" onClick={() => { auth.clear(); location.hash = '#/'; location.reload() }}>Đăng xuất</button>
         </span>
       </header>
       <main>{body}</main>
