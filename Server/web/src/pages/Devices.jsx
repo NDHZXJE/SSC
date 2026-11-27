@@ -208,7 +208,7 @@ function FirmwarePanel({ devs, onChanged }) {
     <div className="card">
       <h2>Firmware (OTA)</h2>
       <p className="muted">
-        {tr('Build bằng')} <code>idf.py build</code> {tr('rồi tải lên file')} <code>build/esp32s3-meter.bin</code>. {tr('Server đọc phiên bản ghi trong ảnh')}{' '}
+        {tr('Build bằng')} <code>idf.py build</code> {tr('rồi tải lên file')} <code>build/*.bin</code>. {tr('Server đọc phiên bản ghi trong ảnh')}{' '}
         (<code>PROJECT_VER</code>) {tr('và gửi lệnh cho từng mạch qua MQTT; mạch tự tải về và nạp.')}
       </p>
       <form className="row" onSubmit={send}>

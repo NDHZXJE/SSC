@@ -154,7 +154,7 @@ export function RoadScene() {
         <g transform={`translate(880 ${ROAD_Y - 64})`}>
           <rect x="0" y="0" width="50" height="62" rx="5" fill="#0f172a" stroke="#22d3ee" strokeOpacity=".7" />
           <circle className="lp-led" cx="38" cy="12" r="4" />
-          <text x="8" y="50" fill="#94a3b8" fontSize="10" fontFamily="ui-monospace,monospace">ESP32</text>
+          <text x="8" y="50" fill="#94a3b8" fontSize="10" fontFamily="ui-monospace,monospace">IoT node</text>
           <g className="lp-wifi" fill="none" stroke="#22d3ee" strokeWidth="2.4" strokeLinecap="round">
             <path d="M14 -10 a16 16 0 0 1 22 0" />
             <path d="M8 -18 a26 26 0 0 1 34 0" />

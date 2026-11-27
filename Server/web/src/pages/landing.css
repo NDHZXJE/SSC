@@ -281,3 +281,20 @@ a.member:hover { border-color: var(--l-cyan); transform: translateY(-2px); }
 .lang-switch button { background: none; border: 0; color: inherit; font: 600 12px/1 inherit; padding: 6px 9px; border-radius: 999px; cursor: pointer; opacity: .7; }
 .lang-switch button:hover { opacity: 1; }
 .lang-switch button.on { background: #22d3ee; color: #04121c; opacity: 1; }
+
+/* ---- Công bố khoa học ---- */
+.pubs { padding: 72px clamp(16px, 5vw, 64px) 24px; max-width: 1320px; margin: 0 auto; }
+.pubs h2 { font-size: clamp(24px, 3vw, 36px); margin: 16px 0 12px; letter-spacing: -.5px; }
+.pubs-lead { color: var(--l-muted); max-width: 760px; line-height: 1.6; margin: 0 0 28px; }
+.pub-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pub { display: flex; gap: 18px; align-items: flex-start; padding: 18px 20px; color: inherit; text-decoration: none;
+  background: linear-gradient(180deg, var(--l-card), #0f151d); border: 1px solid var(--l-line); border-radius: 14px; transition: border-color .2s, transform .2s; }
+.pub:hover { border-color: var(--l-cyan); transform: translateY(-2px); }
+.pub-year { flex: 0 0 auto; font-family: ui-monospace, Consolas, monospace; font-size: 14px; color: var(--l-cyan); padding-top: 2px; }
+.pub-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pub-title { font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--l-text); }
+.pub-authors { font-size: 13.5px; color: var(--l-muted); }
+.pub-venue { font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pub-tag { font-size: 11.5px; font-weight: 600; color: #04121a; background: var(--l-cyan); border-radius: 99px; padding: 2px 8px; }
+.pub-doi { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--l-cyan); overflow-wrap: anywhere; }
+@media (max-width: 560px) { .pub { flex-direction: column; gap: 6px; padding: 16px; } }

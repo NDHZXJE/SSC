@@ -103,7 +103,7 @@ function LoginPanel({ onClose }) {
 
 const STEPS = [
   ['01', 'Cục SSC', 'Bê tông pha sợi carbon. Khi chịu nén, mạng sợi dẫn điện khít lại và điện trở suất ρ thay đổi.'],
-  ['02', 'Node IoT', 'ESP32-S3 với ADC 24-bit ADS1256 đọc điện áp hai đầu điện cực 100 lần mỗi giây, gửi qua Wi-Fi.'],
+  ['02', 'Node IoT', 'Vi điều khiển (MCU) với ADC 24-bit đọc điện áp hai đầu điện cực 100 lần mỗi giây, gửi qua Wi-Fi.'],
   ['03', 'Server và AI', 'Tính ρ, bù nhiệt độ và độ ẩm, áp mô hình hiệu chuẩn riêng của từng cục để ra ứng suất và tải.'],
   ['04', 'Web giám sát', 'Xem trực tiếp từng cục, hiệu chuẩn trên máy nén, quản lý thiết bị và xuất dữ liệu.'],
 ]
@@ -116,6 +116,29 @@ const FEATURES = [
 ]
 
 // Thành viên nhóm. Ảnh đặt ở web/public/team/; thiếu ảnh thì hiện chữ cái đầu tên.
+const PUBS = [
+  { year: 2026, venue: 'Measurement 281, 121975',
+    title: 'Environment-compensated prediction of compressive stress-dependent electrical resistivity response of self-sensing cementitious materials using initial resistivity calibration',
+    authors: 'M.H. Nguyen, M.C. Vo, D.H. Nguyen, L. Nguyen, V.H. Nguyen, Q.Q. Pham, T.N. Phan, D.T. Nguyen, N.P. Pham',
+    doi: '10.1016/j.measurement.2026.121975' },
+  { year: 2026, venue: 'Journal of Building Engineering 130, 117125',
+    title: 'Experimental study of the electromechanical behavior of a multi-bearing self-sensing concrete system for smart slab structures',
+    authors: 'M.H. Nguyen, M.C. Vo, D.T. Nguyen, D.H. Nguyen, V.H. Nguyen, Q.Q. Pham, T.N. Phan, N.P. Pham',
+    doi: '10.1016/j.jobe.2026.117125' },
+  { year: 2023, venue: 'Case Studies in Construction Materials 19, e02685',
+    title: 'An empirical model for electrical resistivity of mortar considering the synergistic effects of carbon fillers, current intensity, and environmental factors',
+    authors: 'M.C. Vo, M.H. Nguyen, L. Nguyen, V.H. Nguyen',
+    doi: '10.1016/j.cscm.2023.e02685' },
+  { year: 2023, venue: 'Journal of Advanced Concrete Technology 21, 762–776',
+    title: 'Stress self-sensitivity of carbon black-filled mortar under nondestructive compression and the effects of electric circuit and specimen dimensions',
+    authors: 'M.C. Vo, M.H. Nguyen, L. Nguyen, V.H. Nguyen',
+    doi: '10.3151/jact.21.762' },
+  { year: 2023, venue: 'IOP Conf. Series: Materials Science and Engineering 1289, 012033',
+    title: 'Compression self-sensibility of the concrete using high content carbon black with various measurement conditions',
+    authors: 'M.C. Vo, L. Nguyen, M.H. Nguyen, V.H. Nguyen',
+    doi: '10.1088/1757-899X/1289/1/012033' },
+]
+
 const TEAM = [
   { name: 'Nguyễn Minh Hải', photo: '/team/nguyen-minh-hai.jpg', link: 'https://sites.google.com/view/nguyenminhhai-hp/' },
   { name: 'Nguyễn Đức Tuấn', photo: '/team/nguyen-duc-tuan.jpg', link: 'https://scv.udn.vn/nguyenductuan' },
@@ -159,6 +182,7 @@ export default function Landing({ openLogin = false }) {
           <a href="#how">{tr('Cách hoạt động')}</a>
           <a href="#apps">{tr('Ứng dụng')}</a>
           <a href="#features">{tr('Tính năng')}</a>
+          <a href="#pubs">{tr('Công bố')}</a>
           <a href="#about">{tr('Về chúng tôi')}</a>
           <LangSwitch />
           <button className="btn ghost" onClick={() => setLogin(true)}>{tr('Đăng nhập')}</button>
@@ -230,6 +254,29 @@ export default function Landing({ openLogin = false }) {
         <div className="team">
           {TEAM.map(m => <Member key={m.name} {...m} />)}
         </div>
+      </section>
+
+      <section id="pubs" className="pubs">
+        <span className="eyebrow">{tr('Công bố khoa học')}</span>
+        <h2>{tr('Nền tảng từ các bài báo Scopus của nhóm')}</h2>
+        <p className="pubs-lead">
+          {tr('Phương pháp đo, mô hình bù môi trường và hệ nhiều cục SSC trong hệ thống này dựa trên các nghiên cứu đã công bố dưới đây.')}
+        </p>
+        <ol className="pub-list">
+          {PUBS.map(p => (
+            <li key={p.doi}>
+              <a className="pub" href={`https://doi.org/${p.doi}`} target="_blank" rel="noopener noreferrer">
+                <span className="pub-year">{p.year}</span>
+                <span className="pub-body">
+                  <span className="pub-title">{p.title}</span>
+                  <span className="pub-authors">{p.authors}</span>
+                  <span className="pub-venue"><em>{p.venue}</em></span>
+                  <span className="pub-doi">doi:{p.doi} ↗</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section className="final">
