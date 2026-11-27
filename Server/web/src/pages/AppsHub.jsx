@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Sơ đồ ứng dụng: khối SSC + vi mạch + IoT + AI ở giữa, 7 lĩnh vực ứng dụng xung quanh.
 // Mỗi lĩnh vực là một hình SVG nhỏ có hoạt ảnh CSS (lớp ah-* trong landing.css).
@@ -227,31 +227,74 @@ const APPS = [
   ['warn', 'Cảnh báo sớm thiên tai', 'Đánh giá rủi ro hạ tầng khi bão, lũ, sạt lở và gửi cảnh báo kịp thời.', Warning],
 ]
 
+const AUTO_MS = 6000
+
 export function AppsHub() {
-  const card = ([key, title, desc, Art]) => (
-    <div className={'ah-card ah-' + key} key={key}>
-      <Art />
-      <h3>{title}</h3>
-      <p>{desc}</p>
-    </div>
-  )
+  const [idx, setIdx] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [tick, setTick] = useState(0) // đổi mỗi lần chuyển slide để chạy lại thanh tiến trình
+  const n = APPS.length
+  const go = i => { setIdx(((i % n) + n) % n); setTick(t => t + 1) }
+
+  useEffect(() => {
+    if (paused) return
+    const id = setTimeout(() => go(idx + 1), AUTO_MS)
+    return () => clearTimeout(id)
+  }, [idx, paused, tick])
+
+  // vuốt ngang trên điện thoại
+  const start = useRef(null)
+  const onDown = e => { start.current = e.clientX }
+  const onUp = e => {
+    if (start.current == null) return
+    const dx = e.clientX - start.current
+    start.current = null
+    if (Math.abs(dx) > 40) go(idx + (dx < 0 ? 1 : -1))
+  }
+
   return (
-    <div className="ah-grid">
+    <div className="ah-wrap" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
         <defs>
           <linearGradient id="ahSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f2a3d" /><stop offset="1" stopColor="#0b1520" /></linearGradient>
           <linearGradient id="ahStorm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e293b" /><stop offset="1" stopColor="#0f172a" /></linearGradient>
         </defs>
       </svg>
-      {APPS.slice(0, 3).map(card)}
-      {card(APPS[3])}
-      <div className="ah-center">
+
+      <aside className="ah-side">
         <Hub />
         <p className="ah-caption">Công nghệ cảm biến diện rộng dựa trên vật liệu bê tông tích hợp <b>vi mạch</b> – <b>IoT</b> – <b>trí tuệ nhân tạo</b></p>
+        <ol className="ah-tabs">
+          {APPS.map(([key, title], i) => (
+            <li key={key}>
+              <button className={i === idx ? 'on' : ''} onClick={() => go(i)}>
+                <span className="ah-num">{String(i + 1).padStart(2, '0')}</span>{title}
+                {i === idx && <i key={tick} className={'ah-progress' + (paused ? ' paused' : '')} style={{ animationDuration: AUTO_MS + 'ms' }} />}
+              </button>
+            </li>
+          ))}
+        </ol>
+      </aside>
+
+      <div className="ah-stage" onPointerDown={onDown} onPointerUp={onUp} onPointerCancel={() => (start.current = null)}>
+        <div className="ah-track" style={{ transform: `translateX(-${idx * 100}%)` }}>
+          {APPS.map(([key, title, desc, Art], i) => (
+            <section className={'ah-slide' + (i === idx ? ' on' : '')} key={key} aria-hidden={i !== idx}>
+              <div className="ah-art"><Art /></div>
+              <div className="ah-text">
+                <span className="ah-kicker">Ứng dụng {i + 1}/{n}</span>
+                <h3>{title}</h3>
+                <p>{desc}</p>
+              </div>
+            </section>
+          ))}
+        </div>
+        <button className="ah-nav prev" aria-label="Ứng dụng trước" onClick={() => go(idx - 1)}>‹</button>
+        <button className="ah-nav next" aria-label="Ứng dụng sau" onClick={() => go(idx + 1)}>›</button>
+        <div className="ah-dots">
+          {APPS.map(([key], i) => <button key={key} className={i === idx ? 'on' : ''} aria-label={`Ứng dụng ${i + 1}`} onClick={() => go(i)} />)}
+        </div>
       </div>
-      {card(APPS[4])}
-      {card(APPS[5])}
-      {card(APPS[6])}
     </div>
   )
 }

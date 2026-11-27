@@ -179,26 +179,43 @@ a.member:hover { border-color: var(--l-cyan); transform: translateY(-2px); }
 .apps { padding: 64px clamp(16px, 5vw, 64px) 24px; max-width: 1320px; margin: 0 auto; }
 .apps h2 { font-size: clamp(24px, 3vw, 36px); margin: 16px 0 10px; letter-spacing: -.5px; }
 .apps-lead { color: var(--l-muted); max-width: 760px; line-height: 1.6; margin: 0 0 28px; }
-.ah-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;
-  grid-template-areas: "bridge dam building" "traffic center energy" "twin center warn"; }
-.ah-bridge { grid-area: bridge; } .ah-dam { grid-area: dam; } .ah-building { grid-area: building; }
-.ah-traffic { grid-area: traffic; } .ah-energy { grid-area: energy; } .ah-twin { grid-area: twin; } .ah-warn { grid-area: warn; }
-.ah-center { grid-area: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 20px; background: radial-gradient(circle at 50% 40%, #22d3ee22, transparent 65%); padding: 8px; }
-.ah-hub { width: 100%; max-width: 440px; height: auto; display: block; padding: 0 30px; box-sizing: border-box; }
-.ah-caption { text-align: center; color: var(--l-text); font-size: 15px; line-height: 1.5; margin: 4px 10px 0; max-width: 420px; }
+.ah-wrap { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.ah-side { display: flex; flex-direction: column; align-items: center; gap: 8px; border-radius: 20px; padding: 12px 6px;
+  background: radial-gradient(circle at 50% 25%, #22d3ee1f, transparent 60%); }
+.ah-hub { width: 100%; max-width: 380px; height: auto; display: block; padding: 0 24px; box-sizing: border-box; }
+.ah-caption { text-align: center; color: var(--l-text); font-size: 14px; line-height: 1.5; margin: 0 8px 6px; }
 .ah-caption b { color: var(--l-cyan); }
-.ah-card { position: relative; background: linear-gradient(180deg, var(--l-card), #0f151d); border: 1px solid var(--l-line); border-radius: 16px;
-  padding: 10px 10px 14px; overflow: hidden; transition: transform .2s, border-color .2s; }
-.ah-card:hover { transform: translateY(-3px); border-color: var(--l-cyan); }
-.ah-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  box-shadow: inset 0 0 0 1px #22d3ee55; opacity: 0; animation: ahPulse 4.2s infinite; }
-.ah-dam::after { animation-delay: .6s; } .ah-building::after { animation-delay: 1.2s; } .ah-energy::after { animation-delay: 1.8s; }
-.ah-warn::after { animation-delay: 2.4s; } .ah-twin::after { animation-delay: 3s; } .ah-traffic::after { animation-delay: 3.6s; }
-@keyframes ahPulse { 0%, 70%, 100% { opacity: 0; } 15% { opacity: 1; } }
+.ah-tabs { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.ah-tabs button { position: relative; width: 100%; text-align: left; font: inherit; font-size: 14px; color: var(--l-muted); background: transparent;
+  border: 1px solid transparent; border-radius: 10px; padding: 8px 12px; cursor: pointer; overflow: hidden; display: flex; gap: 10px; align-items: center; transition: all .25s; }
+.ah-tabs button:hover { color: var(--l-text); background: #ffffff08; }
+.ah-tabs button.on { color: var(--l-text); background: #22d3ee14; border-color: #22d3ee55; }
+.ah-num { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--l-cyan); }
+.ah-progress { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--l-cyan); transform-origin: left; animation: ahProg linear forwards; }
+.ah-progress.paused { animation-play-state: paused; }
+@keyframes ahProg { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.ah-stage { position: relative; overflow: hidden; border-radius: 22px; border: 1px solid var(--l-line); background: #0b1118; touch-action: pan-y; user-select: none; min-height: 100%; }
+.ah-track { display: flex; height: 100%; transition: transform .9s cubic-bezier(.65, 0, .25, 1); }
+.ah-slide { flex: 0 0 100%; position: relative; display: flex; flex-direction: column; }
+.ah-art { overflow: hidden; }
+.ah-art .ah-svg { border-radius: 0; aspect-ratio: 16 / 9; transform: scale(1.12); transition: transform 6s ease-out; }
+.ah-slide.on .ah-art .ah-svg { transform: scale(1); }
+.ah-text { position: absolute; left: 0; right: 0; bottom: 0; padding: 70px 28px 26px; background: linear-gradient(transparent, #070b11ee 55%); }
+.ah-text > * { opacity: 0; transform: translateY(18px); transition: opacity .6s, transform .6s; }
+.ah-slide.on .ah-text > * { opacity: 1; transform: none; }
+.ah-slide.on .ah-text h3 { transition-delay: .35s; } .ah-slide.on .ah-text p { transition-delay: .5s; } .ah-slide.on .ah-kicker { transition-delay: .2s; }
+.ah-kicker { display: inline-block; font-size: 12px; letter-spacing: .6px; text-transform: uppercase; color: var(--l-cyan); }
+.ah-text h3 { margin: 6px 0 6px; font-size: clamp(20px, 2.4vw, 30px); letter-spacing: -.3px; }
+.ah-text p { margin: 0; color: #cbd5e1; font-size: clamp(14px, 1.2vw, 17px); line-height: 1.55; max-width: 620px; }
+.ah-nav { position: absolute; top: 40%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 1px solid #ffffff33;
+  background: #070b11aa; color: #fff; font-size: 28px; line-height: 1; cursor: pointer; backdrop-filter: blur(6px); transition: background .2s, transform .2s; }
+.ah-nav:hover { background: #22d3ee44; transform: translateY(-50%) scale(1.08); }
+.ah-nav.prev { left: 14px; } .ah-nav.next { right: 14px; }
+.ah-dots { position: absolute; top: 14px; right: 18px; display: flex; gap: 6px; }
+.ah-dots button { width: 8px; height: 8px; border-radius: 99px; border: 0; padding: 0; background: #ffffff55; cursor: pointer; transition: all .3s; }
+.ah-dots button.on { width: 22px; background: var(--l-cyan); }
 .ah-svg { width: 100%; height: auto; aspect-ratio: 2 / 1; display: block; border-radius: 10px; }
-.ah-card h3 { margin: 10px 4px 4px; font-size: 16px; }
-.ah-card p { margin: 0 4px; color: var(--l-muted); font-size: 13.5px; line-height: 1.5; }
 
 .ah-wave { animation: ahWave 2.4s linear infinite; }
 @keyframes ahWave { to { transform: translateX(40px); } }
@@ -251,14 +268,20 @@ a.member:hover { border-color: var(--l-cyan); transform: translateY(-2px); }
 .ah-gearlbl { fill: var(--l-text); font-size: 12.5px; font-weight: 700; }
 
 @media (max-width: 960px) {
-  .ah-grid { grid-template-columns: 1fr 1fr; grid-template-areas: "center center" "bridge dam" "building traffic" "energy twin" "warn warn"; }
-  .ah-warn { max-width: calc(50% - 9px); }
+  .ah-wrap { grid-template-columns: 1fr; }
+  .ah-tabs { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .ah-tabs button { white-space: nowrap; }
+  .ah-hub { max-width: 340px; }
 }
 @media (max-width: 560px) {
-  .ah-grid { grid-template-columns: 1fr; grid-template-areas: "center" "bridge" "dam" "building" "traffic" "energy" "twin" "warn"; }
-  .ah-warn { max-width: none; }
+  .ah-tabs { display: none; }
+  .ah-art .ah-svg { aspect-ratio: 4 / 3; }
+  .ah-text { position: static; padding: 14px 16px 34px; background: none; }
+  .ah-nav { top: 30%; width: 36px; height: 36px; font-size: 22px; }
+  .ah-dots { top: auto; bottom: 12px; left: 0; right: 0; justify-content: center; }
 }
 /* Máy tắt hiệu ứng: vẫn chạy nhưng chậm hơn (như các hoạt ảnh khác) */
 @media (prefers-reduced-motion: reduce) {
-  .ah-grid *, .ah-card::after { animation-duration: 6s !important; }
+  .ah-wrap svg * { animation-duration: 6s !important; }
+  .ah-track { transition-duration: 1.4s; }
 }
