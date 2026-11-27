@@ -3,6 +3,7 @@ import { api, auth } from '../api'
 import './landing.css'
 import { SensorScene } from './SensorScene'
 import { AppsHub } from './AppsHub'
+import { t as tr, useLang, LangSwitch, locale } from '../i18n'
 
 // Load cycle shared by the animated block and the signal trace (period 6 s).
 const PERIOD = 3.2 // cùng nhịp với hoạt ảnh máy nén (lpPress trong landing.css)
@@ -34,7 +35,7 @@ function SignalTrace({ t }) {
   return (
     <div className="trace">
       <div className="trace-head">
-        <span><i className="live" /> Tín hiệu minh họa · 100 mẫu/giây</span>
+        <span><i className="live" /> {tr('Tín hiệu minh họa · 100 mẫu/giây')}</span>
         <span className="mono">σ = {(L * 16).toFixed(2)} MPa · F = {(L * 40).toFixed(1)} kN</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
@@ -42,7 +43,7 @@ function SignalTrace({ t }) {
         <polyline points={pts.join(' ')} className="wave-glow" />
         <polyline points={pts.join(' ')} className="wave" />
       </svg>
-      <div className="trace-foot mono"><span>ρ (Ω·m)</span><span>8 giây gần nhất</span></div>
+      <div className="trace-foot mono"><span>ρ (Ω·m)</span><span>{tr('8 giây gần nhất')}</span></div>
     </div>
   )
 }
@@ -62,8 +63,8 @@ function SystemStatus() {
   return (
     <div className={'sys ' + (ok ? 'up' : 'down')}>
       <i />
-      {ok ? <>Hệ thống đang hoạt động · MQTT {h.mqtt ? 'đã kết nối' : 'mất kết nối'} · {Number(h.packets || 0).toLocaleString('vi-VN')} gói dữ liệu đã nhận</>
-        : 'Không kết nối được máy chủ'}
+      {ok ? tr('Hệ thống đang hoạt động · MQTT {mqtt} · {n} gói dữ liệu đã nhận', { mqtt: h.mqtt ? tr('đã kết nối') : tr('mất kết nối'), n: Number(h.packets || 0).toLocaleString(locale()) })
+        : tr('Không kết nối được máy chủ')}
     </div>
   )
 }
@@ -88,13 +89,13 @@ function LoginPanel({ onClose }) {
   return (
     <div className="modal" onClick={e => e.target === e.currentTarget && onClose()}>
       <form className="login-box" onSubmit={submit}>
-        <button type="button" className="close" onClick={onClose} aria-label="Đóng">×</button>
-        <h2>Đăng nhập</h2>
-        <p>Vào hệ thống giám sát SSC</p>
-        <label>Tên đăng nhập<input ref={ref} value={u} onChange={e => setU(e.target.value)} autoComplete="username" /></label>
-        <label>Mật khẩu<input type="password" value={p} onChange={e => setP(e.target.value)} autoComplete="current-password" /></label>
+        <button type="button" className="close" onClick={onClose} aria-label={tr('Đóng')}>×</button>
+        <h2>{tr('Đăng nhập')}</h2>
+        <p>{tr('Vào hệ thống giám sát SSC')}</p>
+        <label>{tr('Tên đăng nhập')}<input ref={ref} value={u} onChange={e => setU(e.target.value)} autoComplete="username" /></label>
+        <label>{tr('Mật khẩu')}<input type="password" value={p} onChange={e => setP(e.target.value)} autoComplete="current-password" /></label>
         {err && <div className="err">{err}</div>}
-        <button type="submit" className="btn primary" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
+        <button type="submit" className="btn primary" disabled={busy}>{busy ? tr('Đang đăng nhập…') : tr('Đăng nhập')}</button>
       </form>
     </div>
   )
@@ -131,7 +132,7 @@ function Member({ name, photo, link }) {
         {ok ? <img src={photo} alt={name} loading="lazy" onError={() => setOk(false)} /> : <span>{initials}</span>}
       </div>
       <h3>{name}</h3>
-      {link && <span className="member-link">Trang cá nhân ↗</span>}
+      {link && <span className="member-link">{tr('Trang cá nhân')} ↗</span>}
     </>
   )
   return link
@@ -140,6 +141,7 @@ function Member({ name, photo, link }) {
 }
 
 export default function Landing({ openLogin = false }) {
+  useLang()
   const t = useClock()
   const [login, setLogin] = useState(openLogin)
   useEffect(() => setLogin(openLogin), [openLogin])
@@ -150,31 +152,31 @@ export default function Landing({ openLogin = false }) {
       <nav className="lnav">
         <a className="brand" href="#/"><span className="logo" />SSC Monitor</a>
         <div className="lnav-links">
-          <a href="#how">Cách hoạt động</a>
-          <a href="#apps">Ứng dụng</a>
-          <a href="#features">Tính năng</a>
-          <a href="#about">Về chúng tôi</a>
-          <button className="btn ghost" onClick={() => setLogin(true)}>Đăng nhập</button>
+          <a href="#how">{tr('Cách hoạt động')}</a>
+          <a href="#apps">{tr('Ứng dụng')}</a>
+          <a href="#features">{tr('Tính năng')}</a>
+          <a href="#about">{tr('Về chúng tôi')}</a>
+          <LangSwitch />
+          <button className="btn ghost" onClick={() => setLogin(true)}>{tr('Đăng nhập')}</button>
         </div>
       </nav>
 
       <section className="hero">
         <div className="hero-text">
-          <span className="eyebrow">Bê tông tự cảm biến · Self-sensing concrete</span>
-          <h1>Bê tông <em>cảm nhận</em> được lực tác động</h1>
+          <span className="eyebrow">{tr('Bê tông tự cảm biến · Self-sensing concrete')}</span>
+          <h1>{tr('Bê tông')} <em>{tr('cảm nhận')}</em> {tr('được lực tác động')}</h1>
           <p>
-            Mỗi cục bê tông là một cảm biến. Hệ thống đọc tín hiệu điện của từng cục, hiệu chuẩn bằng AI
-            và cho anh/chị theo dõi tải trọng kết cấu theo thời gian thực.
+            {tr('Mỗi cục bê tông là một cảm biến. Hệ thống đọc tín hiệu điện của từng cục, hiệu chuẩn bằng AI và cho anh/chị theo dõi tải trọng kết cấu theo thời gian thực.')}
           </p>
           <div className="cta">
-            <button className="btn primary" onClick={() => setLogin(true)}>Vào hệ thống giám sát</button>
-            <a className="btn ghost" href="#how">Tìm hiểu cách hoạt động</a>
+            <button className="btn primary" onClick={() => setLogin(true)}>{tr('Vào hệ thống giám sát')}</button>
+            <a className="btn ghost" href="#how">{tr('Tìm hiểu cách hoạt động')}</a>
           </div>
           <SystemStatus />
           <div className="kpis">
-            <div><b>100</b><span>mẫu/giây mỗi cục</span></div>
-            <div><b>24-bit</b><span>độ phân giải ADC</span></div>
-            <div><b>R² &gt; 0.9</b><span>mô hình hiệu chuẩn</span></div>
+            <div><b>100</b><span>{tr('mẫu/giây mỗi cục')}</span></div>
+            <div><b>24-bit</b><span>{tr('độ phân giải ADC')}</span></div>
+            <div><b>R² &gt; 0.9</b><span>{tr('mô hình hiệu chuẩn')}</span></div>
           </div>
         </div>
         <div className="hero-visual">
@@ -185,21 +187,20 @@ export default function Landing({ openLogin = false }) {
       </section>
 
       <section id="apps" className="apps">
-        <span className="eyebrow">Ứng dụng</span>
-        <h2>Một vật liệu, cả mạng lưới cảm biến cho hạ tầng</h2>
-        <p className="apps-lead">Mỗi cục bê tông vừa chịu lực vừa là cảm biến. Ghép với vi mạch, kết nối IoT và trí tuệ nhân tạo,
-          cả công trình trở thành một mạng cảm biến diện rộng: từ cân xe đang chạy, cầu, đập đến nhà dân dụng chịu động đất.</p>
+        <span className="eyebrow">{tr('Ứng dụng')}</span>
+        <h2>{tr('Một vật liệu, cả mạng lưới cảm biến cho hạ tầng')}</h2>
+        <p className="apps-lead">{tr('Mỗi cục bê tông vừa chịu lực vừa là cảm biến. Ghép với vi mạch, kết nối IoT và trí tuệ nhân tạo, cả công trình trở thành một mạng cảm biến diện rộng: từ cân xe đang chạy, cầu, đập đến nhà dân dụng chịu động đất.')}</p>
         <AppsHub />
       </section>
 
       <section id="how" className="how">
-        <h2>Từ lực nén đến số liệu trên màn hình</h2>
+        <h2>{tr('Từ lực nén đến số liệu trên màn hình')}</h2>
         <div className="steps">
           {STEPS.map(([n, h, d], i) => (
             <div className="step" key={n}>
               <span className="num">{n}</span>
-              <h3>{h}</h3>
-              <p>{d}</p>
+              <h3>{tr(h)}</h3>
+              <p>{tr(d)}</p>
               {i < STEPS.length - 1 && <span className="flow" aria-hidden="true"><i /></span>}
             </div>
           ))}
@@ -212,16 +213,15 @@ export default function Landing({ openLogin = false }) {
 
       <section id="features" className="features">
         {FEATURES.map(([h, d]) => (
-          <div className="feature" key={h}><h3>{h}</h3><p>{d}</p></div>
+          <div className="feature" key={h}><h3>{tr(h)}</h3><p>{tr(d)}</p></div>
         ))}
       </section>
 
       <section id="about" className="about">
-        <span className="eyebrow">Về chúng tôi</span>
-        <h2>Nhóm nghiên cứu Vật liệu tiên tiến AMAST</h2>
+        <span className="eyebrow">{tr('Về chúng tôi')}</span>
+        <h2>{tr('Nhóm nghiên cứu Vật liệu tiên tiến AMAST')}</h2>
         <p className="about-lead">
-          Thuộc Viện ISTAR, Trường Đại học Bách khoa – Đại học Đà Nẵng (DUT – UDN).
-          Nhóm phát triển bê tông tự cảm biến và hệ thống SSC Monitor để đưa vật liệu thông minh vào giám sát công trình thực tế.
+          {tr('Thuộc Viện ISTAR, Trường Đại học Bách khoa – Đại học Đà Nẵng (DUT – UDN). Nhóm phát triển bê tông tự cảm biến và hệ thống SSC Monitor để đưa vật liệu thông minh vào giám sát công trình thực tế.')}
         </p>
         <div className="team">
           {TEAM.map(m => <Member key={m.name} {...m} />)}
@@ -229,13 +229,13 @@ export default function Landing({ openLogin = false }) {
       </section>
 
       <section className="final">
-        <h2>Sẵn sàng theo dõi kết cấu của anh/chị?</h2>
-        <button className="btn primary" onClick={() => setLogin(true)}>Đăng nhập</button>
+        <h2>{tr('Sẵn sàng theo dõi kết cấu của anh/chị?')}</h2>
+        <button className="btn primary" onClick={() => setLogin(true)}>{tr('Đăng nhập')}</button>
       </section>
 
       <footer className="lfoot">
-        <span>SSC Monitor · Hệ thống giám sát bê tông tự cảm biến</span>
-        <span>Mô hình dựa trên các nghiên cứu về vật liệu xi măng tự cảm biến công bố 2023–2026</span>
+        <span>SSC Monitor · {tr('Hệ thống giám sát bê tông tự cảm biến')}</span>
+        <span>{tr('Mô hình dựa trên các nghiên cứu về vật liệu xi măng tự cảm biến công bố 2023–2026')}</span>
       </footer>
 
       {login && <LoginPanel onClose={() => { setLogin(false); if (location.hash === '#/login') location.hash = '#/' }} />}

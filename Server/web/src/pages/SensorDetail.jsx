@@ -1,3 +1,4 @@
+import { t as tr, locale } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { api, download, fmt, isAdmin } from '../api'
 import Chart from '../Chart'
@@ -62,7 +63,7 @@ export default function SensorDetail({ id }) {
       `${s?.code || id}_${resolution}.${fmtName}`)
   }
 
-  if (!s) return <div className="card">{err || 'Đang tải…'}</div>
+  if (!s) return <div className="card">{err || tr('Đang tải…')}</div>
   const lastRho = live[1].length ? live[1][live[1].length - 1] : null
   const lastStress = live[2].length ? live[2][live[2].length - 1] : null
   const calibrated = !!s.model
@@ -71,83 +72,83 @@ export default function SensorDetail({ id }) {
       <div className="row spread">
         <h1>{s.code} <span className="muted">{s.name}</span></h1>
         <div className="row">
-          <span className="row" style={{ gap: 6 }}><span className={'dot' + (s.device?.online ? ' on' : '')} />{s.device ? `${s.device.id} · ${s.device.online ? 'online' : 'offline'}` : 'chưa gán thiết bị'}</span>
-          {isAdmin() && <a href={`#/calib/${id}`}><button>Hiệu chuẩn</button></a>}
+          <span className="row" style={{ gap: 6 }}><span className={'dot' + (s.device?.online ? ' on' : '')} />{s.device ? `${s.device.id} · ${s.device.online ? 'online' : 'offline'}` : tr('chưa gán thiết bị')}</span>
+          {isAdmin() && <a href={`#/calib/${id}`}><button>{tr('Hiệu chuẩn')}</button></a>}
         </div>
       </div>
       {err && <div className="error">{err}</div>}
 
       <div className="card">
         <div className="row spread">
-          <h2>Trực tiếp {LIVE_S} giây gần nhất (100 mẫu/giây)</h2>
+          <h2>{tr('Trực tiếp {n} giây gần nhất (100 mẫu/giây)', { n: LIVE_S })}</h2>
           <div className="row muted">
-            <span>ρ <strong>{fmt(lastRho, 4)}</strong> Ω·m</span>
-            <span>σ <strong>{fmt(lastStress, 3)}</strong> MPa</span>
-            <span>Tải <strong>{lastStress == null ? '–' : fmt(lastStress * s.load_area_mm2 / 1000, 2)}</strong> kN</span>
+            <span>{tr('ρ')} <strong>{fmt(lastRho, 4)}</strong> {tr('Ω·m')}</span>
+            <span>{tr('σ')} <strong>{fmt(lastStress, 3)}</strong> MPa</span>
+            <span>{tr('Tải')} <strong>{lastStress == null ? '–' : fmt(lastStress * s.load_area_mm2 / 1000, 2)}</strong> kN</span>
           </div>
         </div>
         <Chart
           series={calibrated
-            ? [{ label: 'ρ (Ω·m)', color: '#1f6feb' }, { label: 'σ (MPa)', color: '#d1495b', scale: 'y2' }]
-            : [{ label: 'ρ (Ω·m)', color: '#1f6feb' }]}
+            ? [{ label: tr('ρ (Ω·m)'), color: '#1f6feb' }, { label: tr('σ (MPa)'), color: '#d1495b', scale: 'y2' }]
+            : [{ label: tr('ρ (Ω·m)'), color: '#1f6feb' }]}
           data={calibrated ? live : [live[0], live[1]]}
           yLabel="ρ (Ω·m)" y2Label="σ (MPa)"
         />
-        {!calibrated && <div className="muted">Cục chưa có mô hình hiệu chuẩn được duyệt nên chưa tính được ứng suất.</div>}
+        {!calibrated && <div className="muted">{tr('Cục chưa có mô hình hiệu chuẩn được duyệt nên chưa tính được ứng suất.')}</div>}
       </div>
 
       <div className="card">
         <div className="row spread">
-          <h2>Lịch sử</h2>
+          <h2>{tr('Lịch sử')}</h2>
           <div className="row">
-            {RANGES.map(([l, v]) => <button key={v} className={v === range ? '' : 'secondary'} onClick={() => setRange(v)}>{l}</button>)}
+            {RANGES.map(([l, v]) => <button key={v} className={v === range ? '' : 'secondary'} onClick={() => setRange(v)}>{tr(l)}</button>)}
           </div>
         </div>
         {hist && <>
           <Chart
-            series={[{ label: 'ρ trung bình', color: '#1f6feb' }, { label: 'σ (MPa)', color: '#d1495b', scale: 'y2' }, { label: 'Nhiệt độ (°C)', color: '#2a9d8f', scale: 'y2' }]}
+            series={[{ label: tr('ρ trung bình'), color: '#1f6feb' }, { label: tr('σ (MPa)'), color: '#d1495b', scale: 'y2' }, { label: tr('Nhiệt độ (°C)'), color: '#2a9d8f', scale: 'y2' }]}
             data={[hist.t.map(x => x / 1000), hist.rho, hist.stress, hist.temp]}
             yLabel="ρ (Ω·m)" y2Label="σ (MPa), °C"
           />
-          <div className="muted">Mỗi điểm là trung bình {hist.bucket_s} giây.</div>
+          <div className="muted">{tr('Mỗi điểm là trung bình {n} giây.', { n: hist.bucket_s })}</div>
         </>}
         <div className="row" style={{ marginTop: 12 }}>
-          <span className="muted">Xuất dữ liệu khoảng này cho AI / phân tích:</span>
-          <button className="secondary" onClick={() => exportData('raw', 'csv')}>CSV gốc 100 mẫu/s</button>
-          <button className="secondary" onClick={() => exportData('1s', 'csv')}>CSV 1 giây</button>
-          <button className="secondary" onClick={() => exportData('raw', 'parquet')}>Parquet gốc</button>
+          <span className="muted">{tr('Xuất dữ liệu khoảng này cho AI / phân tích:')}</span>
+          <button className="secondary" onClick={() => exportData('raw', 'csv')}>{tr('CSV gốc 100 mẫu/s')}</button>
+          <button className="secondary" onClick={() => exportData('1s', 'csv')}>{tr('CSV 1 giây')}</button>
+          <button className="secondary" onClick={() => exportData('raw', 'parquet')}>{tr('Parquet gốc')}</button>
         </div>
       </div>
 
       <div className="card">
-        <h2>Thông số cục</h2>
+        <h2>{tr('Thông số cục')}</h2>
         <dl className="kv">
-          <dt>Cấp phối</dt><dd>{s.mix}</dd>
-          <dt>Điện cực A × L</dt><dd>{s.electrode_area_mm2} mm² × {s.electrode_gap_mm} mm</dd>
-          <dt>Diện tích chịu nén</dt><dd>{s.load_area_mm2} mm²</dd>
-          <dt>ρs0(0) quy về 20 °C</dt><dd>{fmt(s.rho0_ref, 4)} Ω·m</dd>
-          <dt>Độ ẩm W dùng để bù</dt><dd>{s.moisture_pct} %</dd>
-          <dt>Vị trí</dt><dd>{s.location || '—'}</dd>
-          <dt>Ngày đúc</dt><dd>{s.cast_date || '—'}</dd>
+          <dt>{tr('Cấp phối')}</dt><dd>{s.mix}</dd>
+          <dt>{tr('Điện cực A × L')}</dt><dd>{s.electrode_area_mm2} mm² × {s.electrode_gap_mm} mm</dd>
+          <dt>{tr('Diện tích chịu nén')}</dt><dd>{s.load_area_mm2} mm²</dd>
+          <dt>{tr('ρs0(0) quy về 20 °C')}</dt><dd>{fmt(s.rho0_ref, 4)} Ω·m</dd>
+          <dt>{tr('Độ ẩm W dùng để bù')}</dt><dd>{s.moisture_pct} %</dd>
+          <dt>{tr('Vị trí')}</dt><dd>{s.location || '—'}</dd>
+          <dt>{tr('Ngày đúc')}</dt><dd>{s.cast_date || '—'}</dd>
         </dl>
       </div>
 
       <div className="card">
-        <h2>Các phiên bản hiệu chuẩn</h2>
+        <h2>{tr('Các phiên bản hiệu chuẩn')}</h2>
         <table>
-          <thead><tr><th>#</th><th>Loại</th><th>K (Ω·m/MPa)</th><th>ρ(0)</th><th>T (°C)</th><th>R²</th><th>Sai số σ (MPa)</th><th>Ngày tạo</th><th>Trạng thái</th></tr></thead>
+          <thead><tr><th>#</th><th>{tr('Loại')}</th><th>{tr('K (Ω·m/MPa)')}</th><th>{tr('ρ(0)')}</th><th>T (°C)</th><th>R²</th><th>{tr('Sai số σ (MPa)')}</th><th>{tr('Ngày tạo')}</th><th>{tr('Trạng thái')}</th></tr></thead>
           <tbody>
             {models.map(m => (
               <tr key={m.id}>
-                <td>{m.id}</td><td>{m.kind === 'eq14' ? 'Eq.14 (không nén)' : 'Máy nén'}</td>
+                <td>{m.id}</td><td>{m.kind === 'eq14' ? tr('Eq.14 (không nén)') : tr('Máy nén')}</td>
                 <td>{fmt(m.k, 5)}</td><td>{fmt(m.rho0, 4)}</td><td>{fmt(m.temp, 1)}</td>
                 <td>{fmt(m.r2, 4)}</td><td>{fmt(m.rmse_mpa, 3)}</td>
-                <td>{new Date(m.created_at).toLocaleString('vi-VN')}</td>
-                <td>{m.active ? <span className="badge good">Đang dùng</span>
-                  : isAdmin() ? <button className="secondary" onClick={() => approve(m.id)}>Duyệt và dùng</button> : '—'}</td>
+                <td>{new Date(m.created_at).toLocaleString(locale())}</td>
+                <td>{m.active ? <span className="badge good">{tr('Đang dùng')}</span>
+                  : isAdmin() ? <button className="secondary" onClick={() => approve(m.id)}>{tr('Duyệt và dùng')}</button> : '—'}</td>
               </tr>
             ))}
-            {!models.length && <tr><td colSpan="9" className="muted">Chưa có.</td></tr>}
+            {!models.length && <tr><td colSpan="9" className="muted">{tr('Chưa có.')}</td></tr>}
           </tbody>
         </table>
       </div>

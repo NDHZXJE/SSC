@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { RoadScene } from './RoadScene'
+import { t as tr, locale } from '../i18n'
 
 // Sơ đồ ứng dụng: khối SSC + vi mạch + IoT + AI ở giữa, 7 lĩnh vực ứng dụng xung quanh.
 // Mỗi lĩnh vực là một hình SVG nhỏ có hoạt ảnh CSS (lớp ah-* trong landing.css).
@@ -124,13 +125,13 @@ function Bridge() {
         <g key={s.x}>
           <line x1={s.x} x2={s.x} y1={BR_SEAT + 8} y2={108} stroke="#22d3ee" strokeWidth=".3" strokeDasharray="1 1" />
           <rect x={s.x - 13} y={108.5} width="26" height="8" rx="2" fill="#0b1220" stroke="#22d3ee" strokeWidth=".3" />
-          <text x={s.x} y={113.8} textAnchor="middle" fontSize="3.6" fill="#e2e8f0">SSC · {s.name}</text>
+          <text x={s.x} y={113.8} textAnchor="middle" fontSize="3.6" fill="#e2e8f0">SSC · {tr(s.name)}</text>
         </g>
       ))}
       {/* bảng phản lực gối */}
       <g transform="translate(6 6)">
         <rect width="68" height="30" rx="3" fill="#0b1220" opacity=".85" stroke="#1e293b" strokeWidth=".4" />
-        <text x="4" y="6.5" fontSize="3.6" fill="#94a3b8">Lực lên gối cầu (tấn)</text>
+        <text x="4" y="6.5" fontSize="3.6" fill="#94a3b8">{tr('Lực lên gối cầu (tấn)')}</text>
         {BR_SUP.map((s, i) => (
           <g key={s.x} transform={`translate(4 ${10 + i * 6.4})`}>
             <text y="3.4" fontSize="3.4" fill="#cbd5e1">{s.name}</text>
@@ -142,7 +143,7 @@ function Bridge() {
       </g>
       {/* trạm thu + vệ tinh */}
       <rect x="212" y="76" width="9" height="9" rx="1" fill="#1e293b" stroke="#22d3ee" strokeWidth=".4" />
-      <text x="216.5" y="90" fontSize="2.8" fill="#94a3b8" textAnchor="middle">trạm thu</text>
+      <text x="216.5" y="90" fontSize="2.8" fill="#94a3b8" textAnchor="middle">{tr('trạm thu')}</text>
       <line x1="216.5" x2="216.5" y1="76" y2="72" stroke="#94a3b8" strokeWidth=".5" />
       <circle cx="216.5" cy="71.4" r=".9" className="ah-blink" />
       <path d={`M201 ${BR_SEAT + 3.5} L212 80`} stroke="#22d3ee" strokeWidth=".4" />
@@ -226,9 +227,9 @@ function Dam() {
           <text x="114" y={s.y + 1.3} fontSize="3.3" fill="#22d3ee" textAnchor="end">{P[i].toFixed(0)} kPa</text>
         </g>
       ))}
-      <text x="4" y="8" fontSize="4" fontWeight="700" fill="#e2e8f0">Đập thủy điện</text>
-      <text x="4" y="13" fontSize="3.2" fill="#94a3b8">SSC sát mặt thượng lưu, 3 cao độ</text>
-      <text x="4" y={lvl - 2} fontSize="3" fill="#7dd3fc">▼ MNH</text>
+      <text x="4" y="8" fontSize="4" fontWeight="700" fill="#e2e8f0">{tr('Đập thủy điện')}</text>
+      <text x="4" y="13" fontSize="3.2" fill="#94a3b8">{tr('SSC sát mặt thượng lưu, 3 cao độ')}</text>
+      <text x="4" y={lvl - 2} fontSize="3" fill="#7dd3fc">▼ {tr('MNH')}</text>
 
       {/* ===== mái dốc ===== */}
       <line x1="128" x2="128" y1="6" y2="98" stroke="#1e293b" strokeWidth=".5" />
@@ -239,7 +240,7 @@ function Dam() {
         {[[168, 84], [182, 72], [194, 62], [160, 94]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r=".9" fill="#78350f" />)}
       </g>
       <path d={`M146 ${DAM_FOOT} Q 206 96 214 50`} fill="none" stroke={warn ? '#f97316' : '#fbbf24'} strokeWidth=".6" strokeDasharray="2 1.5" />
-      <text x="208" y="84" fontSize="3" fill={warn ? '#f97316' : '#fbbf24'}>mặt trượt</text>
+      <text x="208" y="84" fontSize="3" fill={warn ? '#f97316' : '#fbbf24'}>{tr('mặt trượt')}</text>
       {/* cỏ */}
       <line x1={SLOPE_B[0]} x2="240" y1="50" y2="50" stroke="#4d7c0f" strokeWidth="1" />
       {SLOPE_S.map(s => {
@@ -255,15 +256,15 @@ function Dam() {
           </g>
         )
       })}
-      <text x="134" y="8" fontSize="4" fontWeight="700" fill="#e2e8f0">Mái dốc, đê</text>
-      <text x="134" y="13" fontSize="3.2" fill="#94a3b8">SSC chôn dọc mái, vuông góc mặt dốc</text>
+      <text x="134" y="8" fontSize="4" fontWeight="700" fill="#e2e8f0">{tr('Mái dốc, đê')}</text>
+      <text x="134" y="13" fontSize="3.2" fill="#94a3b8">{tr('SSC chôn dọc mái, vuông góc mặt dốc')}</text>
       <g transform="translate(176 20)">
         <rect width="60" height="20" rx="3" fill="#0b1220" opacity=".9" stroke={warn ? '#f97316' : '#1e293b'} strokeWidth=".5" />
-        <text x="4" y="7" fontSize="3.3" fill="#94a3b8">Dịch chuyển mái</text>
+        <text x="4" y="7" fontSize="3.3" fill="#94a3b8">{tr('Dịch chuyển mái')}</text>
         <text x="56" y="7" fontSize="3.6" fill="#e2e8f0" textAnchor="end">{(d * 4).toFixed(1)} mm</text>
         <rect x="4" y="10" width="52" height="2.6" rx="1" fill="#1e293b" />
         <rect x="4" y="10" width={52 * d / 3.2} height="2.6" rx="1" fill={warn ? '#f97316' : '#22d3ee'} />
-        <text x="4" y="17.4" fontSize="3.2" fill={warn ? '#f97316' : '#4ade80'}>{warn ? '⚠ Cảnh báo trượt' : '● An toàn'}</text>
+        <text x="4" y="17.4" fontSize="3.2" fill={warn ? '#f97316' : '#4ade80'}>{warn ? '⚠ ' + tr('Cảnh báo trượt') : '● ' + tr('An toàn')}</text>
       </g>
     </svg>
   )
@@ -328,18 +329,18 @@ function Buildings() {
           </g>
         )
       })}
-      <text x="84" y="22" fontSize="3.4" textAnchor="middle" fill="#94a3b8">Nhà khung BTCT 4 tầng</text>
+      <text x="84" y="22" fontSize="3.4" textAnchor="middle" fill="#94a3b8">{tr('Nhà khung BTCT 4 tầng')}</text>
       {/* chú thích vị trí SSC */}
       <line x1="140" y1="103" x2="150" y2="94" stroke="#22d3ee" strokeWidth=".3" strokeDasharray="1 1" />
-      <text x="151" y="93" fontSize="3.2" fill="#22d3ee">SSC trong móng, dưới mỗi chân cột</text>
+      <text x="151" y="93" fontSize="3.2" fill="#22d3ee">{tr('SSC trong móng, dưới mỗi chân cột')}</text>
       {/* bảng địa chấn + lực chân cột */}
       <g transform="translate(150 6)">
         <rect width="86" height="80" rx="3" fill="#0b1220" opacity=".9" stroke={quake ? '#f97316' : '#1e293b'} strokeWidth=".5" />
-        <text x="4" y="7" fontSize="3.6" fontWeight="700" fill={quake ? '#f97316' : '#4ade80'}>{quake ? '⚠ Đang có động đất' : '● Bình thường'}</text>
+        <text x="4" y="7" fontSize="3.6" fontWeight="700" fill={quake ? '#f97316' : '#4ade80'}>{quake ? '⚠ ' + tr('Đang có động đất') : '● ' + tr('Bình thường')}</text>
         <text x="82" y="7" fontSize="3.2" fill="#94a3b8" textAnchor="end">{(env * 0.28).toFixed(2)} g</text>
         <rect x="4" y="10" width="78" height="18" rx="1.5" fill="#111c2b" />
         <polyline points={trace} transform="translate(5 19)" fill="none" stroke="#f97316" strokeWidth=".5" />
-        <text x="4" y="35" fontSize="3.2" fill="#94a3b8">Lực dọc chân cột (tấn)</text>
+        <text x="4" y="35" fontSize="3.2" fill="#94a3b8">{tr('Lực dọc chân cột (tấn)')}</text>
         {N.map((n, i) => (
           <g key={i} transform={`translate(4 ${39 + i * 9.5})`}>
             <text y="3.6" fontSize="3.4" fill={warn[i] ? '#f97316' : '#cbd5e1'}>SSC-C{i + 1}</text>
@@ -446,17 +447,17 @@ function Traffic() {
       ))}
       <line x1={TR_LINE} x2={TR_LINE} y1="108" y2="109" stroke="#22d3ee" strokeWidth=".3" />
       <rect x={TR_LINE - 40} y="109" width="80" height="7" rx="2" fill="#0b1220" stroke="#22d3ee" strokeWidth=".3" />
-      <text x={TR_LINE} y="113.8" fontSize="3.3" fill="#e2e8f0" textAnchor="middle">Hàng SSC chôn dưới mặt đường, mỗi làn 1 khối</text>
+      <text x={TR_LINE} y="113.8" fontSize="3.3" fill="#e2e8f0" textAnchor="middle">{tr('Hàng SSC chôn dưới mặt đường, mỗi làn 1 khối')}</text>
       {/* bảng thống kê */}
       <g transform="translate(4 3)">
         <rect width="232" height="30" rx="3" fill="#0b1220" opacity=".92" stroke="#1e293b" strokeWidth=".4" />
-        <text x="5" y="8" fontSize="3.3" fill="#94a3b8">Lưu lượng</text>
-        <text x="5" y="20" fontSize="9" fontWeight="700" fill="#fbbf24" fontFamily="ui-monospace,monospace">{flow.toLocaleString('vi-VN')}</text>
-        <text x="5" y="26.5" fontSize="3" fill="#94a3b8">xe / giờ</text>
-        <text x="60" y="8" fontSize="3.3" fill="#94a3b8">Phân loại theo tải</text>
-        <text x="60" y="16" fontSize="3.6" fill="#e2e8f0">Xe con: <tspan fill="#22d3ee">{nCar}</tspan></text>
-        <text x="60" y="23" fontSize="3.6" fill="#e2e8f0">Xe tải, buýt: <tspan fill="#f59e0b">{nTruck}</tspan></text>
-        <text x="124" y="8" fontSize="3.3" fill="#94a3b8">Xe qua từng làn</text>
+        <text x="5" y="8" fontSize="3.3" fill="#94a3b8">{tr('Lưu lượng')}</text>
+        <text x="5" y="20" fontSize="9" fontWeight="700" fill="#fbbf24" fontFamily="ui-monospace,monospace">{flow.toLocaleString(locale())}</text>
+        <text x="5" y="26.5" fontSize="3" fill="#94a3b8">{tr('xe / giờ')}</text>
+        <text x="60" y="8" fontSize="3.3" fill="#94a3b8">{tr('Phân loại theo tải')}</text>
+        <text x="60" y="16" fontSize="3.6" fill="#e2e8f0">{tr('Xe con:')} <tspan fill="#22d3ee">{nCar}</tspan></text>
+        <text x="60" y="23" fontSize="3.6" fill="#e2e8f0">{tr('Xe tải, buýt:')} <tspan fill="#f59e0b">{nTruck}</tspan></text>
+        <text x="124" y="8" fontSize="3.3" fill="#94a3b8">{tr('Xe qua từng làn')}</text>
         {lanes.map((l, i) => (
           <g key={i} transform={`translate(${124 + i * 27} 12)`}>
             <rect width="24" height="14" rx="2" fill={l.hot ? '#0e3a52' : '#111c2b'} stroke={l.hot ? '#22d3ee' : '#1e293b'} strokeWidth=".4" />
@@ -520,7 +521,7 @@ function Twin() {
       {/* sông Hàn + bờ đông */}
       <path d="M150 0 L176 0 L176 120 L150 120 Z" fill="#0e3a52" />
       <path d="M152 0 q3 30 0 60 t0 60" stroke="#38bdf8" strokeOpacity=".25" fill="none" />
-      <text x="157" y="100" fontSize="3" fill="#7dd3fc" transform="rotate(-90 157 100)">sông Hàn</text>
+      <text x="157" y="100" fontSize="3" fill="#7dd3fc" transform="rotate(-90 157 100)">{tr('sông Hàn')}</text>
       <rect x="176" y="0" width="14" height="120" fill="#1f2937" />
       {/* nhà */}
       {TW_BLD.map((b, i) => <rect key={i} x={b.x0} y={b.y0} width={b.w} height={b.h} rx="1" fill="#334155" opacity={.5 + .4 * b.lvl} stroke="#475569" strokeWidth=".3" />)}
@@ -529,7 +530,7 @@ function Twin() {
       {TW_V.map(x => <rect key={x} x={x - 4.5} y="0" width="9" height="120" fill="#2b3442" />)}
       <rect x={TW_ROAD_END} y="57.5" width="40" height="9" fill="#475569" />
       <path d={`M${TW_ROAD_END} 57.5 q13 -8 26 0`} stroke="#fbbf24" strokeWidth=".8" fill="none" />
-      <text x="163" y="52" fontSize="3" fill="#fbbf24" textAnchor="middle">Cầu Rồng</text>
+      <text x="163" y="52" fontSize="3" fill="#fbbf24" textAnchor="middle">{tr('Cầu Rồng')}</text>
       {TW_H.map(y => <line key={'l' + y} x1="0" x2="190" y1={y} y2={y} stroke="#64748b" strokeWidth=".3" strokeDasharray="3 3" />)}
       {TW_V.map(x => <line key={'l' + x} x1={x} x2={x} y1="0" y2="120" stroke="#64748b" strokeWidth=".3" strokeDasharray="3 3" />)}
       {/* xe */}
@@ -554,27 +555,27 @@ function Twin() {
       {/* bảng */}
       <g transform="translate(193 4)">
         <rect width="45" height="112" rx="3" fill="#0b1220" opacity=".95" stroke="#1e293b" strokeWidth=".4" />
-        <text x="3" y="7" fontSize="3.4" fontWeight="700" fill="#e2e8f0">Bản sao số</text>
-        <text x="3" y="11.5" fontSize="2.8" fill="#94a3b8">Khu Hải Châu, Đà Nẵng</text>
-        <text x="3" y="20" fontSize="2.8" fill="#94a3b8">Giờ</text>
+        <text x="3" y="7" fontSize="3.4" fontWeight="700" fill="#e2e8f0">{tr('Bản sao số')}</text>
+        <text x="3" y="11.5" fontSize="2.8" fill="#94a3b8">{tr('Khu Hải Châu, Đà Nẵng')}</text>
+        <text x="3" y="20" fontSize="2.8" fill="#94a3b8">{tr('Giờ')}</text>
         <text x="42" y="20" fontSize="4" fontWeight="700" fill="#fbbf24" textAnchor="end" fontFamily="ui-monospace,monospace">{String(hh).padStart(2, '0')}:{String(mm).padStart(2, '0')}</text>
-        <text x="3" y="27" fontSize="2.8" fill="#94a3b8">Cao điểm</text>
-        <text x="42" y="27" fontSize="3" fill={rush > 0.4 ? '#f97316' : '#4ade80'} textAnchor="end">{rush > 0.4 ? 'Có' : 'Không'}</text>
-        <text x="3" y="36" fontSize="2.8" fill="#94a3b8">Chú thích</text>
-        <rect x="3" y="39" width="3.6" height="3.6" rx=".5" fill="#22d3ee" /><text x="9" y="42" fontSize="2.7" fill="#cbd5e1">SSC mặt đường</text>
-        <rect x="3" y="45" width="5" height="5" rx=".5" fill="#22d3ee" /><text x="9" y="48.8" fontSize="2.7" fill="#cbd5e1">SSC móng nhà</text>
+        <text x="3" y="27" fontSize="2.8" fill="#94a3b8">{tr('Cao điểm')}</text>
+        <text x="42" y="27" fontSize="3" fill={rush > 0.4 ? '#f97316' : '#4ade80'} textAnchor="end">{rush > 0.4 ? tr('Có') : tr('Không')}</text>
+        <text x="3" y="36" fontSize="2.8" fill="#94a3b8">{tr('Chú thích')}</text>
+        <rect x="3" y="39" width="3.6" height="3.6" rx=".5" fill="#22d3ee" /><text x="9" y="42" fontSize="2.7" fill="#cbd5e1">{tr('SSC mặt đường')}</text>
+        <rect x="3" y="45" width="5" height="5" rx=".5" fill="#22d3ee" /><text x="9" y="48.8" fontSize="2.7" fill="#cbd5e1">{tr('SSC móng nhà')}</text>
         <defs><linearGradient id="ahTwLeg"><stop offset="0" stopColor={heatColor(0)} /><stop offset=".5" stopColor={heatColor(.5)} /><stop offset="1" stopColor={heatColor(1)} /></linearGradient></defs>
-        <text x="3" y="57" fontSize="2.8" fill="#94a3b8">Mức tải trọng</text>
+        <text x="3" y="57" fontSize="2.8" fill="#94a3b8">{tr('Mức tải trọng')}</text>
         <rect x="3" y="59.5" width="39" height="3.4" rx="1" fill="url(#ahTwLeg)" />
-        <text x="3" y="67" fontSize="2.5" fill="#94a3b8">thấp</text>
-        <text x="22.5" y="67" fontSize="2.5" fill="#94a3b8" textAnchor="middle">vừa</text>
+        <text x="3" y="67" fontSize="2.5" fill="#94a3b8">{tr('thấp')}</text>
+        <text x="22.5" y="67" fontSize="2.5" fill="#94a3b8" textAnchor="middle">{tr('vừa')}</text>
         <text x="42" y="67" fontSize="2.5" fill="#94a3b8" textAnchor="end">cao</text>
-        <text x="3" y="76" fontSize="2.8" fill="#94a3b8">Cục SSC trong khu</text>
+        <text x="3" y="76" fontSize="2.8" fill="#94a3b8">{tr('Cục SSC trong khu')}</text>
         <text x="42" y="76" fontSize="3" fill="#e2e8f0" textAnchor="end">{TW_NODES.length}</text>
-        <text x="3" y="82" fontSize="2.8" fill="#94a3b8">Toàn thành phố</text>
+        <text x="3" y="82" fontSize="2.8" fill="#94a3b8">{tr('Toàn thành phố')}</text>
         <text x="42" y="82" fontSize="3" fill="#e2e8f0" textAnchor="end">12.480</text>
-        <text x="3" y="92" fontSize="2.8" fill="#94a3b8">Tải lớn nhất</text>
-        <text x="3" y="98" fontSize="3.2" fontWeight="700" fill="#f97316">{TW_NODES[hot].bridge ? 'Cầu Rồng' : TW_NODES[hot].bld ? 'Móng nhà cao tầng' : 'Mặt đường'}</text>
+        <text x="3" y="92" fontSize="2.8" fill="#94a3b8">{tr('Tải lớn nhất')}</text>
+        <text x="3" y="98" fontSize="3.2" fontWeight="700" fill="#f97316">{tr(TW_NODES[hot].bridge ? 'Cầu Rồng' : TW_NODES[hot].bld ? 'Móng nhà cao tầng' : 'Mặt đường')}</text>
         <text x="3" y="104" fontSize="3" fill="#e2e8f0">{(load[hot] * 180).toFixed(0)} kPa</text>
       </g>
     </svg>
@@ -639,7 +640,7 @@ export function AppsHub() {
           {APPS.map(([key, title], i) => (
             <li key={key}>
               <button className={i === idx ? 'on' : ''} onClick={() => go(i)}>
-                <span className="ah-num">{String(i + 1).padStart(2, '0')}</span>{SHORT[key] || title}
+                <span className="ah-num">{String(i + 1).padStart(2, '0')}</span>{tr(SHORT[key] || title)}
                 {i === idx && <i key={tick} className={'ah-progress' + (paused ? ' paused' : '')} style={{ animationDuration: (APPS[i][4] || AUTO_MS) + 'ms' }} />}
               </button>
             </li>
@@ -653,17 +654,17 @@ export function AppsHub() {
             <section className={'ah-slide' + (i === idx ? ' on' : '') + (long ? ' wide' : '')} key={key} aria-hidden={i !== idx}>
               <div className="ah-art"><Art /></div>
               <div className="ah-text">
-                <span className="ah-kicker">Ứng dụng {i + 1}/{n}</span>
-                <h3>{title}</h3>
-                <p>{desc}</p>
+                <span className="ah-kicker">{tr('Ứng dụng')} {i + 1}/{n}</span>
+                <h3>{tr(title)}</h3>
+                <p>{tr(desc)}</p>
               </div>
             </section>
           ))}
         </div>
-        <button className="ah-nav prev" aria-label="Ứng dụng trước" onClick={() => go(idx - 1)}>‹</button>
-        <button className="ah-nav next" aria-label="Ứng dụng sau" onClick={() => go(idx + 1)}>›</button>
+        <button className="ah-nav prev" aria-label={tr('Ứng dụng trước')} onClick={() => go(idx - 1)}>‹</button>
+        <button className="ah-nav next" aria-label={tr('Ứng dụng sau')} onClick={() => go(idx + 1)}>›</button>
         <div className="ah-dots">
-          {APPS.map(([key], i) => <button key={key} className={i === idx ? 'on' : ''} aria-label={`Ứng dụng ${i + 1}`} onClick={() => go(i)} />)}
+          {APPS.map(([key], i) => <button key={key} className={i === idx ? 'on' : ''} aria-label={`${tr('Ứng dụng')} ${i + 1}`} onClick={() => go(i)} />)}
         </div>
       </div>
     </div>

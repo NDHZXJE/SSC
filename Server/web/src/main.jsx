@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
 import { auth } from './api'
+import { t, useLang, LangSwitch } from './i18n'
 import Landing from './pages/Landing'
 import Overview from './pages/Overview'
 import SensorDetail from './pages/SensorDetail'
@@ -21,6 +22,7 @@ function useHash() {
 }
 
 function App() {
+  useLang() // đổi ngôn ngữ thì vẽ lại toàn bộ cây
   const hash = useHash()
   const user = auth.user
   if (!auth.token) return <Landing openLogin={hash === '#/login'} />
@@ -42,16 +44,17 @@ function App() {
       <header>
         <strong>SSC Monitor</strong>
         <nav>
-          {link('#/', 'Tổng quan')}
-          {link('#/calib', 'Hiệu chuẩn')}
-          {link('#/devices', 'Thiết bị')}
-          {user?.role === 'admin' && link('#/data', 'Nhập dữ liệu')}
-          {user?.role === 'admin' && link('#/admin', 'Quản trị')}
+          {link('#/', t('Tổng quan'))}
+          {link('#/calib', t('Hiệu chuẩn'))}
+          {link('#/devices', t('Thiết bị'))}
+          {user?.role === 'admin' && link('#/data', t('Nhập dữ liệu'))}
+          {user?.role === 'admin' && link('#/admin', t('Quản trị'))}
         </nav>
         <span className="who">
-          {user?.username} ({user?.role === 'admin' ? 'quản trị' : 'người xem'})
-          <button className="link" onClick={() => { auth.clear(); location.hash = '#/'; location.reload() }}>Đăng xuất</button>
+          {user?.username} ({user?.role === 'admin' ? t('quản trị') : t('người xem')})
+          <button className="link" onClick={() => { auth.clear(); location.hash = '#/'; location.reload() }}>{t('Đăng xuất')}</button>
         </span>
+        <LangSwitch />
       </header>
       <main>{body}</main>
     </>

@@ -1,3 +1,4 @@
+import { t as tr } from '../i18n'
 import { useEffect, useState } from 'react'
 import { api, fmt, isAdmin } from '../api'
 
@@ -15,13 +16,13 @@ export default function Overview() {
   return (
     <>
       <div className="row spread">
-        <h1>Tổng quan</h1>
-        <span className="muted">{online}/{rows.length} cục đang online · cập nhật mỗi 2 giây</span>
+        <h1>{tr('Tổng quan')}</h1>
+        <span className="muted">{tr('{a}/{b} cục đang online · cập nhật mỗi 2 giây', { a: online, b: rows.length })}</span>
       </div>
       {err && <div className="error">{err}</div>}
       {rows.length === 0 && (
         <div className="card muted">
-          Chưa có cục nào. {isAdmin() ? <>Vào <a href="#/admin">Quản trị</a> để thêm cục, rồi gán thiết bị ở <a href="#/devices">Thiết bị</a>.</> : 'Liên hệ quản trị viên.'}
+          {tr('Chưa có cục nào.')} {isAdmin() ? <>{tr('Vào')} <a href="#/admin">{tr('Quản trị')}</a> {tr('để thêm cục, rồi gán thiết bị ở')} <a href="#/devices">{tr('Thiết bị')}</a>.</> : tr('Liên hệ quản trị viên.')}
         </div>
       )}
       <div className="grid">
@@ -34,7 +35,7 @@ export default function Overview() {
             <div className="muted">{r.name || '—'} · {r.mix}{r.location ? ' · ' + r.location : ''}</div>
             {r.model_id
               ? <div className="big">{fmt(r.latest?.load_kn, 2)} <span className="muted">kN</span></div>
-              : <div className="big">{fmt(r.latest?.rho, 3)} <span className="muted">Ω·m</span></div>}
+              : <div className="big">{fmt(r.latest?.rho, 3)} <span className="muted">{tr('Ω·m')}</span></div>}
             <div className="row muted">
               <span>σ {fmt(r.latest?.stress, 3)} MPa</span>
               <span>ρ {fmt(r.latest?.rho, 3)} Ω·m</span>
@@ -42,9 +43,9 @@ export default function Overview() {
             </div>
             <div style={{ marginTop: 8 }}>
               {r.model_id
-                ? <span className="badge good">Đã hiệu chuẩn · {r.model_kind === 'eq14' ? 'Eq.14' : 'máy nén'}</span>
-                : <span className="badge warn">Chưa hiệu chuẩn</span>}
-              {!r.device_id && <span className="badge" style={{ marginLeft: 6 }}>Chưa gán thiết bị</span>}
+                ? <span className="badge good">{tr('Đã hiệu chuẩn')} · {r.model_kind === 'eq14' ? 'Eq.14' : tr('máy nén')}</span>
+                : <span className="badge warn">{tr('Chưa hiệu chuẩn')}</span>}
+              {!r.device_id && <span className="badge" style={{ marginLeft: 6 }}>{tr('Chưa gán thiết bị')}</span>}
             </div>
           </a>
         ))}
