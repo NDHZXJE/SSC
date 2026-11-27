@@ -114,6 +114,31 @@ const FEATURES = [
   ['Nhiều gối, một sàn', 'Tổng tín hiệu của nhiều gối SSC tuyến tính với tải trên cả tấm sàn, sai số dưới 10% trong thí nghiệm.'],
 ]
 
+// Thành viên nhóm. Ảnh đặt ở web/public/team/; thiếu ảnh thì hiện chữ cái đầu tên.
+const TEAM = [
+  { name: 'Nguyễn Minh Hải', photo: '/team/nguyen-minh-hai.jpg', link: 'https://sites.google.com/view/nguyenminhhai-hp/' },
+  { name: 'Nguyễn Đức Tuấn', photo: '/team/nguyen-duc-tuan.jpg', link: 'https://scv.udn.vn/nguyenductuan' },
+  { name: 'Võ Minh Chí', photo: '/team/vo-minh-chi.jpg' },
+  { name: 'Nguyễn Đức Hưng', photo: '/team/nguyen-duc-hung.jpg' },
+]
+
+function Member({ name, photo, link }) {
+  const [ok, setOk] = useState(true)
+  const initials = name.split(' ').slice(-2).map(w => w[0]).join('')
+  const card = (
+    <>
+      <div className="avatar">
+        {ok ? <img src={photo} alt={name} loading="lazy" onError={() => setOk(false)} /> : <span>{initials}</span>}
+      </div>
+      <h3>{name}</h3>
+      {link && <span className="member-link">Trang cá nhân ↗</span>}
+    </>
+  )
+  return link
+    ? <a className="member" href={link} target="_blank" rel="noopener noreferrer">{card}</a>
+    : <div className="member">{card}</div>
+}
+
 export default function Landing({ openLogin = false }) {
   const t = useClock()
   const [login, setLogin] = useState(openLogin)
@@ -127,6 +152,7 @@ export default function Landing({ openLogin = false }) {
         <div className="lnav-links">
           <a href="#how">Cách hoạt động</a>
           <a href="#features">Tính năng</a>
+          <a href="#about">Về chúng tôi</a>
           <button className="btn ghost" onClick={() => setLogin(true)}>Đăng nhập</button>
         </div>
       </nav>
@@ -187,6 +213,18 @@ export default function Landing({ openLogin = false }) {
         {FEATURES.map(([h, d]) => (
           <div className="feature" key={h}><h3>{h}</h3><p>{d}</p></div>
         ))}
+      </section>
+
+      <section id="about" className="about">
+        <span className="eyebrow">Về chúng tôi</span>
+        <h2>Nhóm nghiên cứu Vật liệu tiên tiến AMAST</h2>
+        <p className="about-lead">
+          Thuộc Viện ISTAR, Trường Đại học Bách khoa – Đại học Đà Nẵng (DUT – UDN).
+          Nhóm phát triển bê tông tự cảm biến và hệ thống SSC Monitor để đưa vật liệu thông minh vào giám sát công trình thực tế.
+        </p>
+        <div className="team">
+          {TEAM.map(m => <Member key={m.name} {...m} />)}
+        </div>
       </section>
 
       <section className="final">
