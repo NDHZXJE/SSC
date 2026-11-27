@@ -172,7 +172,7 @@ export default function DataEntry() {
     setRows(o => ({ ...o, EpBac: r }))
   }
 
-  // Từ file điện áp ESP32 + bậc tải: Rs = Rr·|Us| / (Up − |Us|), ρ = Rs·A/L
+  // Từ file điện áp node IoT + bậc tải: Rs = Rr·|Us| / (Up − |Us|), ρ = Rs·A/L
   const onVolt = async f => { if (!f) return; const t = await f.text(); const p = parseCsv(t); setVolt({ name: f.name, ...p }) }
   const fileRows = useMemo(() => {
     if (!volt || !sensor) return []
@@ -316,7 +316,7 @@ export default function DataEntry() {
         <div className="ai">
           <div className="field"><label>{tr('Bối cảnh thí nghiệm')}</label>
             <textarea rows="7" value={context} onChange={e => setContext(e.target.value)}
-              placeholder={tr('Ví dụ: Ép cục SSC-001 trên máy nén 300 kN phòng thí nghiệm, ngày 26/11. Người đo: xi. Nhiệt độ trong cục 25 °C, mẫu đã dưỡng hộ 28 ngày, để khô 3 ngày. Đo Rs bằng ESP32, Up 16 V, Rr 820 Ω. Ép 0 → 12 MPa bậc 2 MPa, 3 chu kỳ.')} /></div>
+              placeholder={tr('Ví dụ: Ép cục SSC-001 trên máy nén 300 kN phòng thí nghiệm, ngày 26/11. Người đo: xi. Nhiệt độ trong cục 25 °C, mẫu đã dưỡng hộ 28 ngày, để khô 3 ngày. Đo Rs bằng node IoT, Up 16 V, Rr 820 Ω. Ép 0 → 12 MPa bậc 2 MPa, 3 chu kỳ.')} /></div>
           <div className="chat">
             <div className="chat-log" ref={logRef}>
               {!chat.length && <p className="hint" style={{ margin: 0 }}>{tr('Ví dụ: "chu kỳ 1: 0 kN Rs 6.25 kΩ, 5 kN 6.2 kΩ, 10 kN 6.14 kΩ…" hoặc dán nguyên bảng ghi chép.')}</p>}
@@ -394,7 +394,7 @@ export default function DataEntry() {
 
         {type === 'EpBac' && <div className="radio">
           <label><input type="radio" checked={epMode === 'tay'} onChange={() => setEpMode('tay')} /> {tr('Nhập từng bậc (tay, dán từ Excel, hoặc lấy từ node)')}</label>
-          <label><input type="radio" checked={epMode === 'file'} onChange={() => setEpMode('file')} /> {tr('Từ file điện áp ESP32 + các bậc tải')}</label>
+          <label><input type="radio" checked={epMode === 'file'} onChange={() => setEpMode('file')} /> {tr('Từ file điện áp node IoT + các bậc tải')}</label>
         </div>}
 
         {type === 'EpBac' && epMode === 'file' && <>

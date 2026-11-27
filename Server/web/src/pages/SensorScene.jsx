@@ -11,7 +11,7 @@ const GRAVEL = [
 export function SensorScene() {
   return (
     <svg className="lp-scene scene" viewBox="0 0 540 430" role="img"
-      aria-label={tr('Cục bê tông tự cảm biến chịu tải, dòng điện đi qua bê tông, node ESP32 gửi dữ liệu không dây')}>
+      aria-label={tr('Cục bê tông tự cảm biến chịu tải, dòng điện đi qua bê tông, node IoT gửi dữ liệu không dây')}>
       <defs>
         <linearGradient id="lpTop" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#c9ced6" /><stop offset="1" stopColor="#9aa2ad" />
@@ -82,14 +82,14 @@ export function SensorScene() {
         ))}
       </g>
 
-      {/* dây nối và node ESP32 */}
+      {/* dây nối và node IoT */}
       <path className="lp-wire" d="M366 222 C 400 214, 410 250, 432 258" />
       <path className="lp-wire" d="M366 272 C 392 274, 410 274, 432 272" />
       <g transform="translate(432 236)">
         <rect width="78" height="54" rx="8" fill="#0f172a" stroke="#22d3ee" strokeOpacity=".7" />
         <rect x="10" y="12" width="26" height="20" rx="3" fill="#1e293b" stroke="#475569" />
         <circle className="lp-led" cx="64" cy="14" r="4" />
-        <text x="10" y="46" fill="#94a3b8" fontSize="10" fontFamily="ui-monospace,monospace">ESP32</text>
+        <text x="10" y="46" fill="#94a3b8" fontSize="10" fontFamily="ui-monospace,monospace">IoT node</text>
         <g className="lp-wifi" fill="none" stroke="#22d3ee" strokeWidth="2.4" strokeLinecap="round">
           <path d="M28 -12 a16 16 0 0 1 22 0" />
           <path d="M22 -20 a26 26 0 0 1 34 0" />
