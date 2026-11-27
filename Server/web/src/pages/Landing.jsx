@@ -107,7 +107,7 @@ function SignalTrace({ t }) {
   return (
     <div className="trace">
       <div className="trace-head">
-        <span><i className="live" /> Tín hiệu trực tiếp · 100 mẫu/giây</span>
+        <span><i className="live" /> Tín hiệu minh họa · 100 mẫu/giây</span>
         <span className="mono">σ = {(L * 16).toFixed(2)} MPa · F = {(L * 40).toFixed(1)} kN</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
@@ -116,6 +116,27 @@ function SignalTrace({ t }) {
         <polyline points={pts.join(' ')} className="wave" />
       </svg>
       <div className="trace-foot mono"><span>ρ (Ω·m)</span><span>8 giây gần nhất</span></div>
+    </div>
+  )
+}
+
+function SystemStatus() {
+  // Real status from the public health endpoint (no login needed).
+  const [h, setH] = useState(null)
+  useEffect(() => {
+    let stop = false
+    const load = () => fetch('/api/health').then(r => r.json()).then(d => !stop && setH(d)).catch(() => !stop && setH(false))
+    load()
+    const id = setInterval(load, 5000)
+    return () => { stop = true; clearInterval(id) }
+  }, [])
+  if (h === null) return null
+  const ok = h && h.ok
+  return (
+    <div className={'sys ' + (ok ? 'up' : 'down')}>
+      <i />
+      {ok ? <>Hệ thống đang hoạt động · MQTT {h.mqtt ? 'đã kết nối' : 'mất kết nối'} · {Number(h.packets || 0).toLocaleString('vi-VN')} gói dữ liệu đã nhận</>
+        : 'Không kết nối được máy chủ'}
     </div>
   )
 }
@@ -195,6 +216,7 @@ export default function Landing({ openLogin = false }) {
             <button className="btn primary" onClick={() => setLogin(true)}>Vào hệ thống giám sát</button>
             <a className="btn ghost" href="#how">Tìm hiểu cách hoạt động</a>
           </div>
+          <SystemStatus />
           <div className="kpis">
             <div><b>100</b><span>mẫu/giây mỗi cục</span></div>
             <div><b>24-bit</b><span>độ phân giải ADC</span></div>

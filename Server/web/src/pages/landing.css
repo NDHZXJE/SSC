@@ -97,3 +97,7 @@
   .scene { width: 86%; }
 }
 @media (prefers-reduced-motion: reduce) { .live, .flow i { animation: none; } }
+.sys { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--l-muted); border: 1px solid var(--l-line); border-radius: 99px; padding: 6px 12px; margin: -12px 0 26px; }
+.sys i { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+.sys.up i { background: #22c55e; box-shadow: 0 0 10px #22c55e; animation: blink 2s infinite; }
+.sys.down i { background: #ef4444; }
