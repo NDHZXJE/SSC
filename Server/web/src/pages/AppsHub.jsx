@@ -4,24 +4,149 @@ import { RoadScene } from './RoadScene'
 // Sơ đồ ứng dụng: khối SSC + vi mạch + IoT + AI ở giữa, 7 lĩnh vực ứng dụng xung quanh.
 // Mỗi lĩnh vực là một hình SVG nhỏ có hoạt ảnh CSS (lớp ah-* trong landing.css).
 
-function Bridge() {
+// Cầu hai nhịp: khối SSC đặt ở gối cầu (trên mố trái, trụ giữa, mố phải).
+// Xe chạy qua → phản lực gối đổi theo vị trí xe → khối SSC sáng lên và bảng số liệu cập nhật.
+const BR_SUP = [{ x: 44, name: 'Mố trái' }, { x: 120, name: 'Trụ giữa' }, { x: 196, name: 'Mố phải' }]
+const BR_DECK = 64 // mặt trên bản mặt cầu
+const BR_SEAT = 72 // đáy dầm = mặt trên khối SSC
+const BR_CARS = [
+  { kind: 'car', len: 20, w: 1.6, v: 34, off: 0, color: '#ef4444' },
+  { kind: 'truck', len: 32, w: 12, v: 22, off: 150, color: '#f59e0b' },
+]
+
+function bridgeLoads(xs) {
+  const R = [2, 3, 2] // tĩnh tải (t), quy ước
+  xs.forEach(({ x, w }) => {
+    for (let i = 0; i < 2; i++) {
+      const a = BR_SUP[i].x, b = BR_SUP[i + 1].x
+      if (x >= a && x <= b) { const t = (x - a) / (b - a); R[i] += w * (1 - t); R[i + 1] += w * t }
+    }
+  })
+  return R
+}
+
+function BrCar({ x, color, spin }) {
   return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g transform={`translate(${x - 10} ${BR_DECK - 9})`}>
+      <path d="M1 7 L1 4.6 Q1 3.6 2.2 3.4 L5.5 2.8 L8.6 0.4 Q9.2 0 10 0 L14.5 0 Q15.4 0 16 .6 L18 3 L19.2 3.4 Q20 3.7 20 4.6 L20 7 Z" fill={color} />
+      <path d="M8.9 1 L10.6 1 L10.6 3 L6.6 3 Z M11.4 1 L14.4 1 L16.4 3 L11.4 3 Z" fill="#bae6fd" opacity=".85" />
+      <rect x="19" y="4.2" width="1.2" height="1" rx=".4" fill="#fde68a" />
+      <rect x=".6" y="4.4" width="1" height="1" rx=".4" fill="#f87171" />
+      {[5, 15.5].map(cx => (
+        <g key={cx} transform={`translate(${cx} 7.2) rotate(${spin})`}>
+          <circle r="2" fill="#0f172a" /><circle r="1" fill="#94a3b8" /><line x1="-1" x2="1" stroke="#0f172a" strokeWidth=".4" />
+        </g>
+      ))}
+    </g>
+  )
+}
+
+function BrTruck({ x, color, spin }) {
+  return (
+    <g transform={`translate(${x - 16} ${BR_DECK - 15})`}>
+      <rect x="0" y="0" width="22" height="11" rx="1" fill="#e2e8f0" />
+      <rect x="1.5" y="1.5" width="19" height="2" rx=".5" fill={color} opacity=".9" />
+      <text x="11" y="8.6" textAnchor="middle" fontSize="3.6" fontWeight="700" fill="#334155">SSC</text>
+      <path d="M23 11 L23 3 Q23 2 24 2 L28.4 2 Q29.4 2 30 3 L32 6.6 L32 11 Z" fill={color} />
+      <path d="M24.4 3.2 L28 3.2 L30 6.4 L24.4 6.4 Z" fill="#bae6fd" opacity=".85" />
+      <rect x="31" y="8" width="1.2" height="1.2" fill="#fde68a" />
+      <rect x="0" y="11" width="32" height="1.4" fill="#334155" />
+      {[4.5, 9.5, 27].map(cx => (
+        <g key={cx} transform={`translate(${cx} 13.2) rotate(${spin})`}>
+          <circle r="2.2" fill="#0f172a" /><circle r="1.1" fill="#94a3b8" /><line x1="-1.1" x2="1.1" stroke="#0f172a" strokeWidth=".4" />
+        </g>
+      ))}
+    </g>
+  )
+}
+
+function SscBlock({ x, load, max }) {
+  const k = Math.min(1, Math.max(0, (load - 2) / (max - 2)))
+  return (
+    <g>
+      <rect x={x - 6} y={BR_SEAT - 2} width="12" height="2" fill="#475569" />
+      <rect x={x - 5} y={BR_SEAT} width="10" height="7" rx=".8" fill="#9aa2ad" stroke="#22d3ee" strokeWidth={0.4 + k * 0.8} />
+      <rect x={x - 5} y={BR_SEAT} width="10" height="7" rx=".8" fill="#22d3ee" opacity={k * 0.55} />
+      <line x1={x - 4} x2={x + 4} y1={BR_SEAT + 2.2} y2={BR_SEAT + 2.2} stroke="#b45309" strokeWidth=".9" />
+      <line x1={x - 4} x2={x + 4} y1={BR_SEAT + 4.8} y2={BR_SEAT + 4.8} stroke="#b45309" strokeWidth=".9" />
+      <circle cx={x} cy={BR_SEAT + 3.5} r={6 + k * 4} fill="none" stroke="#22d3ee" strokeOpacity={k * 0.7} strokeWidth=".6" />
+    </g>
+  )
+}
+
+function Bridge() {
+  const [t, setT] = useState(0)
+  useEffect(() => {
+    const speed = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.5 : 1
+    let raf, last = performance.now(), acc = 0
+    const loop = now => { acc += (now - last) / 1000 * speed; last = now; setT(acc); raf = requestAnimationFrame(loop) }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  const span = 320
+  const cars = BR_CARS.map(c => ({ ...c, x: ((c.off + c.v * t) % span) - 40 }))
+  const R = bridgeLoads(cars)
+  const max = 17
+  const spin = (t * 360 * 2) % 360
+  return (
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: 'linear-gradient(#0f2a3d 50%, #0e3a52 50%)' }}>
       <rect width="240" height="120" fill="url(#ahSky)" />
-      <rect y="86" width="240" height="34" fill="#0e3a52" />
-      <path className="ah-wave" d="M0 92 q10 -4 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke="#38bdf8" strokeOpacity=".35" fill="none" />
-      {[60, 180].map(x => <rect key={x} x={x - 4} y="22" width="8" height="66" rx="2" fill="#94a3b8" />)}
-      <path d="M0 70 Q 60 22 120 70 Q 180 22 240 70" fill="none" stroke="#cbd5e1" strokeWidth="1.6" />
-      {[20, 40, 80, 100, 140, 160, 200, 220].map(x => {
-        const t = (x % 120) / 120 // dây võng bậc hai giữa hai trụ
-        return <line key={x} x1={x} y1={70 - 96 * t + 96 * t * t} x2={x} y2="72" stroke="#94a3b8" strokeOpacity=".6" />
+      {/* sông */}
+      <rect y="92" width="240" height="28" fill="#0e3a52" />
+      <path className="ah-wave" d="M0 98 q10 -3 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke="#38bdf8" strokeOpacity=".35" fill="none" />
+      {/* nền đường hai đầu + mố cầu */}
+      <polygon points="0,68 40,68 40,120 0,120" fill="#3f3a33" />
+      <polygon points="200,68 240,68 240,120 200,120" fill="#3f3a33" />
+      <polygon points="34,79 52,79 50,104 30,104" fill="#64748b" />
+      <polygon points="188,79 206,79 210,104 190,104" fill="#64748b" />
+      {/* trụ giữa */}
+      <rect x="111" y="79" width="18" height="3" fill="#64748b" />
+      <rect x="115" y="82" width="10" height="26" fill="#64748b" />
+      {/* vòm + dây treo */}
+      <path d="M44 64 Q 82 24 120 64 Q 158 24 196 64" fill="none" stroke="#cbd5e1" strokeWidth="1.4" />
+      {[56, 68, 82, 94, 106, 134, 146, 158, 172, 184].map(x => {
+        const a = x < 120 ? 44 : 120, u = (x - a) / 76
+        return <line key={x} x1={x} x2={x} y1={64 - 80 * u * (1 - u)} y2={BR_DECK} stroke="#94a3b8" strokeOpacity=".55" strokeWidth=".5" />
       })}
-      <rect y="70" width="240" height="6" fill="#475569" />
-      <g className="ah-car ah-car-a"><rect x="-24" y="63" width="18" height="8" rx="2" fill="#f59e0b" /></g>
-      <g className="ah-car ah-car-b"><rect x="-24" y="63" width="14" height="8" rx="2" fill="#e2e8f0" /></g>
-      {[40, 120, 200].map((x, i) => <circle key={x} cx={x} cy="76" r="3" className="ah-blink" style={{ animationDelay: `${i * 0.4}s` }} />)}
-      <g className="ah-bob"><rect x="200" y="10" width="14" height="8" rx="1" fill="#cbd5e1" /><rect x="190" y="12" width="9" height="4" fill="#3b82f6" /><rect x="215" y="12" width="9" height="4" fill="#3b82f6" /></g>
-      <path className="ah-beam" d="M206 20 L120 74" stroke="#22d3ee" strokeDasharray="3 5" />
+      {/* khối SSC ở gối cầu */}
+      {BR_SUP.map((s, i) => <SscBlock key={s.x} x={s.x} load={R[i]} max={max} />)}
+      {/* dầm + mặt đường */}
+      <rect x="0" y={BR_DECK} width="240" height={BR_SEAT - 2 - BR_DECK} fill="#475569" />
+      <rect x="0" y={BR_DECK} width="240" height="1" fill="#1f2937" />
+      <line x1="0" x2="240" y1={BR_DECK + .5} y2={BR_DECK + .5} stroke="#fbbf24" strokeWidth=".3" strokeDasharray="3 3" />
+      {/* xe */}
+      {cars.map((c, i) => c.kind === 'car'
+        ? <BrCar key={i} x={c.x} color={c.color} spin={spin} />
+        : <BrTruck key={i} x={c.x} color={c.color} spin={spin * 0.9} />)}
+      {/* nhãn khối SSC */}
+      {BR_SUP.map((s, i) => (
+        <g key={s.x}>
+          <line x1={s.x} x2={s.x} y1={BR_SEAT + 8} y2={108} stroke="#22d3ee" strokeWidth=".3" strokeDasharray="1 1" />
+          <rect x={s.x - 13} y={108.5} width="26" height="8" rx="2" fill="#0b1220" stroke="#22d3ee" strokeWidth=".3" />
+          <text x={s.x} y={113.8} textAnchor="middle" fontSize="3.6" fill="#e2e8f0">SSC · {s.name}</text>
+        </g>
+      ))}
+      {/* bảng phản lực gối */}
+      <g transform="translate(6 6)">
+        <rect width="68" height="30" rx="3" fill="#0b1220" opacity=".85" stroke="#1e293b" strokeWidth=".4" />
+        <text x="4" y="6.5" fontSize="3.6" fill="#94a3b8">Lực lên gối cầu (tấn)</text>
+        {BR_SUP.map((s, i) => (
+          <g key={s.x} transform={`translate(4 ${10 + i * 6.4})`}>
+            <text y="3.4" fontSize="3.4" fill="#cbd5e1">{s.name}</text>
+            <rect x="17" width="30" height="3.6" rx="1" fill="#1e293b" />
+            <rect x="17" width={30 * Math.min(1, R[i] / max)} height="3.6" rx="1" fill="#22d3ee" />
+            <text x="62" y="3.4" fontSize="3.4" fill="#e2e8f0" textAnchor="end">{R[i].toFixed(1)}</text>
+          </g>
+        ))}
+      </g>
+      {/* trạm thu + vệ tinh */}
+      <rect x="206" y="58" width="8" height="10" rx="1" fill="#1e293b" stroke="#22d3ee" strokeWidth=".4" />
+      <line x1="210" x2="210" y1="58" y2="52" stroke="#94a3b8" strokeWidth=".5" />
+      <circle cx="210" cy="51" r=".9" className="ah-blink" />
+      <path d={`M196 ${BR_SEAT + 3} L206 66`} stroke="#22d3ee" strokeWidth=".4" />
+      <g className="ah-bob"><rect x="206" y="12" width="12" height="7" rx="1" fill="#cbd5e1" /><rect x="197" y="14" width="8" height="3" fill="#3b82f6" /><rect x="219" y="14" width="8" height="3" fill="#3b82f6" /></g>
+      <path className="ah-beam" d="M210 50 L212 20" stroke="#22d3ee" strokeDasharray="2 3" strokeWidth=".6" />
     </svg>
   )
 }
@@ -170,7 +295,7 @@ function Warning() {
 
 const APPS = [
   ['weigh', 'Cân xe khi đang chạy', 'Cụm 4 cục SSC chôn dọc làn xe dưới lớp móng. Xe chạy qua, từng trục ép lần lượt lên các cục, hệ thống đọc tải và cộng ra trọng lượng xe mà không cần dừng xe.', RoadScene, 12000],
-  ['bridge', 'Giám sát sức khỏe công trình cầu đường', 'Theo dõi ứng suất mặt cầu, trụ cầu khi xe chạy qua, phát hiện sớm hư hỏng.', Bridge],
+  ['bridge', 'Giám sát sức khỏe công trình cầu đường', 'Khối SSC đặt tại gối cầu trên mố và trụ, đo lực truyền xuống khi xe chạy qua, phát hiện sớm lún, nứt hay quá tải.', Bridge],
   ['dam', 'Quan trắc đê điều, mái dốc', 'Cảm nhận áp lực nước và dịch chuyển mái dốc theo thời gian thực.', Dam],
   ['building', 'Quan trắc công trình dân dụng', 'Cột, dầm, sàn tự báo tải trọng và biến dạng trong suốt vòng đời công trình.', Buildings],
   ['traffic', 'Quản lý lưu lượng giao thông', 'Đếm xe, đo tải trục và cân xe khi đang chạy ngay dưới mặt đường.', Traffic],
