@@ -6,11 +6,11 @@ QuetNhiet, EpBac, LapDat, KiemChung). Trợ lý KHÔNG tự lưu: các dòng đ�
 form, qua bước kiểm tra, người dùng bấm Lưu.
 
 Hai loại model, chọn bằng biến môi trường:
-  AI_CHAT_PROVIDER=ollama  (mặc định) model nhỏ chạy ngay trên server, không cần Internet.
+  AI_CHAT_PROVIDER=ollama  model nhỏ chạy ngay trên server, không cần Internet.
       OLLAMA_URL   (mặc định http://ollama:11434), OLLAMA_MODEL (mặc định qwen2.5:7b)
   AI_CHAT_PROVIDER=claude  gọi Claude API, cần ANTHROPIC_API_KEY.
       CLAUDE_MODEL (mặc định claude-haiku-5-5)
-  AI_CHAT_PROVIDER=openai  mọi dịch vụ có API kiểu OpenAI, gồm cả bản miễn phí:
+  AI_CHAT_PROVIDER=openai  (mặc định) mọi dịch vụ có API kiểu OpenAI, gồm cả bản miễn phí:
       Google Gemini (AI Studio), Groq, OpenRouter...
       LLM_BASE_URL, LLM_API_KEY, LLM_MODEL
       Gemini: LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai  LLM_MODEL=gemini-3.5-flash-lite
@@ -27,7 +27,7 @@ import httpx
 
 from . import dataset
 
-PROVIDER = os.getenv("AI_CHAT_PROVIDER", "ollama").lower()
+PROVIDER = os.getenv("AI_CHAT_PROVIDER", "openai").lower()
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-5-5")

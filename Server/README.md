@@ -123,7 +123,7 @@ Có bước kiểm tra trước khi lưu, danh sách dữ liệu đã lưu và n
 ### Trợ lý AI ở trang Nhập dữ liệu
 Ô "Bối cảnh thí nghiệm" + khung chat: người dùng mô tả thí nghiệm và kể/dán số liệu, trợ lý chọn loại dữ liệu và điền sẵn vào form
 (không tự lưu; người dùng xem mục Kiểm tra rồi bấm Lưu). Bối cảnh và hội thoại được lưu vào bảng `experiment_notes`.
-- Mặc định dùng model nhỏ chạy trên máy chủ qua Ollama (dịch vụ `ollama` trong docker-compose). Lần đầu: `docker compose exec ollama ollama pull qwen2.5:7b`.
+- Mặc định dùng Gemini (AI_CHAT_PROVIDER=openai, cần LLM_API_KEY). Muốn chạy model nhỏ ngay trên máy chủ thì đặt `AI_CHAT_PROVIDER=ollama`, chạy `docker compose --profile ollama up -d` rồi `docker compose exec ollama ollama pull qwen2.5:7b`.
   Máy chậm thì dùng `OLLAMA_MODEL=qwen2.5:3b`.
 - Hoặc dùng Claude API: đặt `AI_CHAT_PROVIDER=claude` và `ANTHROPIC_API_KEY` trong `.env` (model mặc định `claude-haiku-5-5`, đổi bằng `CLAUDE_MODEL`).
 - Hoặc dùng API miễn phí kiểu OpenAI, ví dụ Google Gemini: lấy khoá ở https://aistudio.google.com/apikey rồi đặt trong `.env`:
