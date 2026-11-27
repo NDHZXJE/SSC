@@ -582,17 +582,183 @@ function Twin() {
   )
 }
 
+// Đường ray tàu cao tốc (ray không ba-lát): khối SSC đặt dưới tấm bê tông đỡ ray, cách đều nhau.
+// Mỗi trục bánh đi qua là khối bên dưới bị ép; từ thời điểm hai khối liên tiếp sáng suy ra tốc độ, từ biên độ ra tải trục.
+const RL_Y = 66 // đỉnh ray
+const RL_BLK = [24, 64, 104, 144, 184, 224]
+const RL_AXLES = [14, 30, 92, 108, 170, 186] // vị trí trục tính từ đuôi tàu
+const RL_LEN = 214
+const RL_W = [15.6, 15.4, 15.8, 15.5, 16.4, 16.2] // tải trục (tấn), toa đầu nặng hơn
+
+function Rail() {
+  const t = useSceneClock()
+  const cyc = t % 3.2
+  const x0 = -RL_LEN - 10 + cyc * 210 // đuôi tàu, ~320 km/h quy ước
+  const axles = RL_AXLES.map((a, i) => ({ x: x0 + a, w: RL_W[i] }))
+  const load = RL_BLK.map(bx => axles.reduce((s, a) => s + a.w * Math.exp(-((a.x - bx) ** 2) / (2 * 10 * 10)), 0))
+  const passed = axles.filter(a => a.x > RL_BLK[0]).length
+  const moving = x0 + RL_LEN > 0 && x0 < 240
+  const lastW = axles.filter(a => a.x > RL_BLK[2]).map(a => a.w)
+  return (
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: 'linear-gradient(#0f2a3d 50%, #3f3a33 50%)' }}>
+      <rect width="240" height="120" fill="url(#ahSky)" />
+      {/* nền + lớp kết cấu */}
+      <rect y="92" width="240" height="28" fill="#3f3a33" />
+      <rect y="84" width="240" height="8" fill="#57534e" />
+      <rect y={RL_Y + 6} width="240" height="12" fill="#64748b" />
+      {Array.from({ length: 24 }, (_, i) => <rect key={i} x={i * 10 + 2} y={RL_Y + 3} width="6" height="3" fill="#94a3b8" />)}
+      <rect y={RL_Y} width="240" height="3" fill="#cbd5e1" />
+      {/* khối SSC dưới tấm đỡ ray */}
+      {RL_BLK.map((bx, i) => {
+        const k = Math.min(1, load[i] / 16)
+        return (
+          <g key={bx}>
+            <rect x={bx - 6} y={RL_Y + 18} width="12" height="7" rx=".8" fill="#9aa2ad" stroke="#22d3ee" strokeWidth={0.4 + k * 0.8} />
+            <rect x={bx - 6} y={RL_Y + 18} width="12" height="7" rx=".8" fill="#22d3ee" opacity={k * 0.6} />
+            <line x1={bx - 5} x2={bx + 5} y1={RL_Y + 20} y2={RL_Y + 20} stroke="#b45309" strokeWidth=".8" />
+            <line x1={bx - 5} x2={bx + 5} y1={RL_Y + 23} y2={RL_Y + 23} stroke="#b45309" strokeWidth=".8" />
+            <circle cx={bx} cy={RL_Y + 21.5} r={7 + k * 4} fill="none" stroke="#22d3ee" strokeOpacity={k * 0.7} strokeWidth=".5" />
+            <text x={bx} y={RL_Y + 31} fontSize="3" textAnchor="middle" fill={k > 0.3 ? '#22d3ee' : '#94a3b8'}>{load[i] > 0.5 ? `${load[i].toFixed(1)} t` : `T${i + 1}`}</text>
+          </g>
+        )
+      })}
+      {/* cáp tín hiệu chạy dọc */}
+      <line x1="0" x2="240" y1={RL_Y + 34} y2={RL_Y + 34} stroke="#22d3ee" strokeWidth=".3" strokeDasharray="1.5 1.5" />
+      {/* cột điện + dây tiếp xúc */}
+      <line x1="0" x2="240" y1="32" y2="32" stroke="#94a3b8" strokeWidth=".3" />
+      {[20, 80, 140, 200].map(x => <line key={x} x1={x} x2={x} y1="32" y2={RL_Y + 6} stroke="#475569" strokeWidth=".6" />)}
+      {/* tàu */}
+      {moving && (
+        <g transform={`translate(${x0} 0)`}>
+          {[0, 1, 2, 3, 4, 5].map(i => <line key={i} x1={-30 - i * 6} x2={-8 - i * 3} y1={40 + i * 4} y2={40 + i * 4} stroke="#e2e8f0" strokeOpacity=".25" strokeWidth=".6" />)}
+          <path d={`M0 ${RL_Y - 6} L0 ${RL_Y - 24} Q0 ${RL_Y - 27} 3 ${RL_Y - 27} L${RL_LEN - 34} ${RL_Y - 27} Q${RL_LEN - 8} ${RL_Y - 26} ${RL_LEN} ${RL_Y - 10} L${RL_LEN} ${RL_Y - 6} Z`} fill="#f1f5f9" />
+          <path d={`M0 ${RL_Y - 15} L${RL_LEN - 2} ${RL_Y - 15}`} stroke="#2563eb" strokeWidth="2" />
+          <path d={`M${RL_LEN - 30} ${RL_Y - 25} Q${RL_LEN - 14} ${RL_Y - 24} ${RL_LEN - 8} ${RL_Y - 17} L${RL_LEN - 28} ${RL_Y - 17} Z`} fill="#0f172a" opacity=".8" />
+          {Array.from({ length: 14 }, (_, i) => <rect key={i} x={8 + i * 12.5} y={RL_Y - 23} width="7" height="4.5" rx="1" fill="#1e293b" opacity=".75" />)}
+          {[72, 144].map(x => <line key={x} x1={x} x2={x} y1={RL_Y - 27} y2={RL_Y - 6} stroke="#94a3b8" strokeWidth=".4" />)}
+          <rect x="0" y={RL_Y - 6} width={RL_LEN} height="2.5" fill="#334155" />
+          {RL_AXLES.map(a => <circle key={a} cx={a} cy={RL_Y - 2.2} r="2.6" fill="#0f172a" stroke="#64748b" strokeWidth=".5" />)}
+          <line x1="40" x2="40" y1={RL_Y - 27} y2={RL_Y - 32} stroke="#94a3b8" strokeWidth=".5" />
+          <path d={`M34 ${RL_Y - 32} L46 ${RL_Y - 32}`} stroke="#94a3b8" strokeWidth=".5" />
+        </g>
+      )}
+      {/* nhãn lớp */}
+      <text x="8" y={RL_Y + 15} fontSize="3" fill="#e2e8f0">{tr('Tấm bê tông đỡ ray')}</text>
+      <text x="120" y={RL_Y + 41} fontSize="3.2" textAnchor="middle" fill="#22d3ee">{tr('SSC dưới tấm đỡ ray, mỗi 5 m một khối')}</text>
+      <text x="8" y="114" fontSize="3" fill="#94a3b8">{tr('Nền đường sắt')}</text>
+      {/* bảng */}
+      <g transform="translate(4 4)">
+        <rect width="96" height="24" rx="3" fill="#0b1220" opacity=".92" stroke="#1e293b" strokeWidth=".4" />
+        <text x="4" y="7" fontSize="3" fill="#94a3b8">{tr('Tốc độ đo được')}</text>
+        <text x="4" y="17" fontSize="7" fontWeight="700" fill="#fbbf24" fontFamily="ui-monospace,monospace">{moving ? 318 + Math.round(4 * Math.sin(t)) : '—'}</text>
+        <text x="4" y="21.5" fontSize="2.8" fill="#94a3b8">km/h</text>
+        <text x="40" y="7" fontSize="3" fill="#94a3b8">{tr('Tải trục (tấn)')}</text>
+        {RL_W.map((w, i) => (
+          <g key={i} transform={`translate(${40 + i * 9} 10)`}>
+            <rect width="7" height="9" rx="1" fill="#1e293b" />
+            <rect y={9 - 9 * (i < lastW.length ? w / 17 : 0)} width="7" height={9 * (i < lastW.length ? w / 17 : 0)} rx="1" fill="#22d3ee" />
+          </g>
+        ))}
+        <text x="40" y="22.5" fontSize="2.6" fill={passed === 6 ? '#4ade80' : '#94a3b8'}>{passed === 6 ? '● ' + tr('Ray ổn định, không lệch tải') : tr('Đã qua {n}/6 trục', { n: passed })}</text>
+      </g>
+    </svg>
+  )
+}
+
+// Mặt cắt ngang đường hầm: 8 khối SSC gắn trong vỏ hầm quanh chu vi, đo áp lực đất và nước lên thành hầm.
+// Mực nước ngầm dâng hạ theo chu kỳ; một vùng vai phải tăng áp bất thường để minh họa cảnh báo.
+const TN_C = [84, 64], TN_R = 38
+function Tunnel() {
+  const t = useSceneClock()
+  const wl = 30 + 8 * Math.sin(t * 0.5) // mực nước ngầm (y)
+  const anomaly = Math.max(0, Math.sin(t * 0.35)) ** 3 // vùng vai phải tăng áp
+  const ang = Array.from({ length: 8 }, (_, i) => -90 + i * 45) // 0 = đỉnh
+  const P = ang.map((a, i) => {
+    const rad = a * Math.PI / 180
+    const y = TN_C[1] + TN_R * Math.sin(rad)
+    const earth = 120 + 40 * Math.abs(Math.sin(rad)) + (Math.sin(rad) < 0 ? 30 : 0) // đỉnh chịu tải đất lớn hơn
+    const water = Math.max(0, y - wl) * 2.2
+    return earth + water + (i === 1 ? 120 * anomaly : 0)
+  })
+  const warn = P.map((p, i) => i === 1 && anomaly > 0.5)
+  const pMax = 340
+  const pt = (a, r) => [TN_C[0] + r * Math.cos(a * Math.PI / 180), TN_C[1] + r * Math.sin(a * Math.PI / 180)]
+  const radar = P.map((p, i) => { const r = 4 + 18 * p / pMax, a = ang[i] * Math.PI / 180; return `${196 + r * Math.cos(a)},${72 + r * Math.sin(a)}` }).join(' ')
+  return (
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: '#3f3a33' }}>
+      <rect width="240" height="120" fill="#4a3f33" />
+      <rect width="240" height="14" fill="#57534e" />
+      <rect y="14" width="160" height="24" fill="#5b4a3a" />
+      <rect y={wl} width="160" height={120 - wl} fill="#0e3a52" opacity=".45" />
+      <path className="ah-wave" d={`M-20 ${wl} q5 -1.5 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0`} stroke="#38bdf8" strokeOpacity=".8" fill="none" strokeWidth=".5" />
+      <text x="4" y={wl - 1.5} fontSize="3" fill="#7dd3fc">▼ {tr('Mực nước ngầm')}</text>
+      <text x="4" y="9" fontSize="3" fill="#e2e8f0">{tr('Mặt đất')}</text>
+      {/* mũi tên áp lực lên vỏ hầm */}
+      {ang.map((a, i) => {
+        const L = 4 + 12 * P[i] / pMax
+        const [x1, y1] = pt(a, TN_R + 5 + L), [x2, y2] = pt(a, TN_R + 4)
+        return <g key={'a' + i}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={warn[i] ? '#f97316' : '#fbbf24'} strokeWidth=".8" />
+          <circle cx={x2} cy={y2} r=".9" fill={warn[i] ? '#f97316' : '#fbbf24'} /></g>
+      })}
+      {/* vỏ hầm */}
+      <circle cx={TN_C[0]} cy={TN_C[1]} r={TN_R + 2.5} fill="none" stroke="#94a3b8" strokeWidth="5" />
+      <circle cx={TN_C[0]} cy={TN_C[1]} r={TN_R} fill="#111827" />
+      {/* bên trong: bản đáy, ray, tàu điện */}
+      <rect x={TN_C[0] - 30} y={TN_C[1] + 22} width="60" height="6" fill="#475569" />
+      <g transform={`translate(${TN_C[0]} ${TN_C[1] + 22})`}>
+        <rect x="-15" y="-26" width="30" height="24" rx="4" fill="#e2e8f0" />
+        <rect x="-11" y="-21" width="22" height="9" rx="1.5" fill="#1e293b" opacity=".8" />
+        <rect x="-15" y="-8" width="30" height="2" fill="#2563eb" />
+        <rect x="-12" y="-2" width="6" height="2" fill="#334155" /><rect x="6" y="-2" width="6" height="2" fill="#334155" />
+        {[-8, 8].map(x => <circle key={x} cx={x} cy="-12" r=".8" fill="#fde68a" className="ah-blink" />)}
+      </g>
+      {/* đèn hầm */}
+      {[-150, -30].map(a => { const [x, y] = pt(a, TN_R - 3); return <circle key={a} cx={x} cy={y} r="1" fill="#fde68a" opacity=".8" /> })}
+      {/* SSC trong vỏ hầm */}
+      {ang.map((a, i) => {
+        const [x, y] = pt(a, TN_R + 2.5)
+        return <SensorChip key={'s' + i} x={x} y={y} k={Math.min(1, (P[i] - 110) / 200)} warn={warn[i]} rot={a} />
+      })}
+      {ang.map((a, i) => {
+        const [x, y] = pt(a, TN_R - 8)
+        return <text key={'n' + i} x={x} y={y + 1.2} fontSize="2.8" textAnchor="middle" fill={warn[i] ? '#f97316' : '#94a3b8'}>S{i + 1}</text>
+      })}
+      <text x="4" y="116" fontSize="3" fill="#22d3ee">{tr('8 khối SSC gắn trong vỏ hầm quanh chu vi')}</text>
+      {/* bảng: biểu đồ cực áp lực */}
+      <g transform="translate(160 4)">
+        <rect width="76" height="112" rx="3" fill="#0b1220" opacity=".93" stroke={anomaly > 0.5 ? '#f97316' : '#1e293b'} strokeWidth=".5" />
+        <text x="4" y="7" fontSize="3.4" fontWeight="700" fill="#e2e8f0">{tr('Áp lực lên vỏ hầm')}</text>
+        <text x="4" y="12" fontSize="2.8" fill="#94a3b8">kPa</text>
+        {[1, 0.66, 0.33].map(f => <circle key={f} cx="36" cy="38" r={4 + 18 * f} fill="none" stroke="#1e293b" strokeWidth=".4" />)}
+        <polygon points={radar} transform="translate(-160 -34)" fill="#22d3ee" fillOpacity=".25" stroke={anomaly > 0.5 ? '#f97316' : '#22d3ee'} strokeWidth=".6" />
+        {P.map((p, i) => (
+          <g key={i} transform={`translate(${4 + (i % 2) * 36} ${66 + Math.floor(i / 2) * 7})`}>
+            <text y="3" fontSize="2.9" fill={warn[i] ? '#f97316' : '#cbd5e1'}>S{i + 1}</text>
+            <text x="32" y="3" fontSize="2.9" fill={warn[i] ? '#f97316' : '#e2e8f0'} textAnchor="end">{p.toFixed(0)}</text>
+          </g>
+        ))}
+        <text x="4" y="103" fontSize="3" fontWeight="700" fill={anomaly > 0.5 ? '#f97316' : '#4ade80'}>{anomaly > 0.5 ? '⚠ ' + tr('Áp lực bất thường ở vai phải') : '● ' + tr('Vỏ hầm chịu lực đều')}</text>
+        <text x="4" y="108.5" fontSize="2.6" fill="#94a3b8">{tr('Nước ngầm dâng làm tăng áp đáy')}</text>
+      </g>
+    </svg>
+  )
+}
+
 const APPS = [
   ['weigh', 'Cân xe khi đang chạy', 'Cụm 4 cục SSC chôn dọc làn xe dưới lớp móng. Xe chạy qua, từng trục ép lần lượt lên các cục, hệ thống đọc tải và cộng ra trọng lượng xe mà không cần dừng xe.', RoadScene, 12000],
   ['bridge', 'Giám sát sức khỏe công trình cầu đường', 'Khối SSC đặt tại gối cầu trên mố và trụ, đo lực truyền xuống khi xe chạy qua, phát hiện sớm lún, nứt hay quá tải.', Bridge],
   ['dam', 'Quan trắc đê điều, mái dốc', 'Khối SSC gắn sát mặt thượng lưu đập ở nhiều cao độ để đo áp lực nước, và chôn dọc mái dốc để phát hiện sớm khối đất bắt đầu trượt.', Dam],
   ['building', 'Quan trắc công trình dân dụng', 'Mỗi chân cột đặt một khối SSC trong móng. Khi động đất, hệ thống thấy ngay cột nào bị ép quá tải để cảnh báo và kiểm tra sau sự cố.', Buildings, 10000],
+  ['rail', 'Đường ray tàu cao tốc', 'Khối SSC đặt dưới tấm bê tông đỡ ray, cách đều nhau dọc tuyến. Mỗi trục bánh đi qua ép lần lượt lên từng khối; hệ thống suy ra tốc độ tàu, tải từng trục và phát hiện sớm ray lún hay lệch tải.', Rail, 9000],
+  ['tunnel', 'Đường hầm', 'Các khối SSC gắn trong vỏ hầm quanh chu vi, đo áp lực đất và nước ngầm tác động lên thành hầm. Biểu đồ cực cho thấy vỏ hầm chịu lực đều hay đang có một vùng bị ép bất thường.', Tunnel, 10000],
   ['traffic', 'Quản lý lưu lượng giao thông', 'Một hàng khối SSC chôn ngang đường, mỗi làn một khối. Xe đè qua là được đếm theo làn và phân loại xe con hay xe tải theo lực ép.', Traffic, 9000],
   ['twin', 'Bản sao số: bản đồ tải trọng đô thị', 'Mỗi cục SSC dưới mặt đường và móng nhà gửi số liệu về bản sao số. Màu từng cục cho thấy mức tải ngay lúc đó; ghép hàng nghìn khu như thế này sẽ ra bản đồ tải trọng của cả Đà Nẵng.', Twin, 10000],
 ]
 
 // tên ngắn cho hàng tab
-const SHORT = { weigh: 'Cân xe', bridge: 'Cầu đường', dam: 'Đê điều, mái dốc', building: 'Dân dụng', traffic: 'Giao thông',
+const SHORT = { weigh: 'Cân xe', bridge: 'Cầu đường', dam: 'Đê điều, mái dốc', building: 'Dân dụng', traffic: 'Giao thông', rail: 'Tàu cao tốc', tunnel: 'Đường hầm',
   twin: 'Bản sao số' }
 
 const AUTO_MS = 6000 // cảnh cân xe dài hơn để xe kịp chạy qua cụm cục
