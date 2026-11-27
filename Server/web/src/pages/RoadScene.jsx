@@ -136,8 +136,9 @@ export function RoadScene() {
             <g transform={`translate(0 ${1.5 * c.level})`}>
               <rect x={c.cx - 30} y={ROAD_Y + 92} width="60" height="52" rx="3" fill="url(#rdCube)" />
               <rect x={c.cx - 30} y={ROAD_Y + 92} width="60" height="52" rx="3" fill="#22d3ee" opacity={0.08 + 0.45 * c.level} />
-              <line x1={c.cx - 15} y1={ROAD_Y + 96} x2={c.cx - 15} y2={ROAD_Y + 140} className="rd-electrode" />
-              <line x1={c.cx + 15} y1={ROAD_Y + 96} x2={c.cx + 15} y2={ROAD_Y + 140} className="rd-electrode" />
+              {/* hai điện cực nằm ngang trên và dưới, dòng điện đi theo phương tải */}
+              <line x1={c.cx - 24} y1={ROAD_Y + 102} x2={c.cx + 24} y2={ROAD_Y + 102} className="rd-electrode" />
+              <line x1={c.cx - 24} y1={ROAD_Y + 134} x2={c.cx + 24} y2={ROAD_Y + 134} className="rd-electrode" />
             </g>
             <text x={c.cx} y={ROAD_Y + 164} textAnchor="middle" className={'rd-label' + (j === hot && c.level > 0.05 ? ' strong' : '')}>
               R-0{j + 1}

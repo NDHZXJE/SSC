@@ -28,8 +28,8 @@ export function SensorScene() {
           <stop offset="0" stopColor="#22d3ee" stopOpacity=".55" /><stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
         </radialGradient>
         <filter id="lpBlur"><feGaussianBlur stdDeviation="2.2" /></filter>
-        <path id="lpCurrent" d="M297 300 C 310 285, 322 300, 330 282 S 340 268, 343 262" />
-        <path id="lpCurrent2" d="M297 260 C 312 250, 320 262, 330 245 S 340 236, 343 232" />
+        <path id="lpCurrent" d="M302 304 C 310 294, 294 284, 302 274 S 308 262, 302 254" />
+        <path id="lpCurrent2" d="M336 287 C 344 277, 328 267, 336 257 S 342 245, 336 237" />
       </defs>
 
       {/* bóng đổ */}
@@ -49,10 +49,10 @@ export function SensorScene() {
         {/* vùng ứng suất phát sáng theo nhịp tải */}
         <ellipse className="lp-stress" cx="320" cy="270" rx="48" ry="62" fill="url(#lpGlow)" />
 
-        {/* hai điện cực lưới */}
+        {/* hai điện cực lưới nằm ngang (song song mặt chịu nén), dòng điện đi dọc theo phương lực */}
         <g className="lp-electrode">
-          <line x1="297" y1="232" x2="297" y2="330" />
-          <line x1="343" y1="210" x2="343" y2="308" />
+          <line x1="276" y1="267" x2="366" y2="222" />
+          <line x1="276" y1="317" x2="366" y2="272" />
         </g>
 
         {/* dòng điện chạy giữa hai điện cực */}
@@ -82,8 +82,8 @@ export function SensorScene() {
       </g>
 
       {/* dây nối và node ESP32 */}
-      <path className="lp-wire" d="M343 214 C 400 205, 410 250, 432 258" />
-      <path className="lp-wire" d="M297 236 C 330 262, 392 276, 432 272" />
+      <path className="lp-wire" d="M366 222 C 400 214, 410 250, 432 258" />
+      <path className="lp-wire" d="M366 272 C 392 274, 410 274, 432 272" />
       <g transform="translate(432 236)">
         <rect width="78" height="54" rx="8" fill="#0f172a" stroke="#22d3ee" strokeOpacity=".7" />
         <rect x="10" y="12" width="26" height="20" rx="3" fill="#1e293b" stroke="#475569" />
