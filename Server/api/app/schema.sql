@@ -37,6 +37,30 @@ CREATE TABLE IF NOT EXISTS devices (
     config      JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Ghép mạch bằng mã 6 số: node chưa ghép gửi "pair" trong gói status, quản trị nhập mã đó trên web.
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS paired BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS pair_code TEXT;
+UPDATE devices SET paired = true WHERE sensor_id IS NOT NULL AND NOT paired;  -- node đã gán cục từ trước coi như đã ghép
+-- OTA qua server: ota_ok = firmware trên mạch biết nhận lệnh ssc/<id>/ota; ota = lần nạp gần nhất
+-- {"job","token","fw_id","version","from","state","pct","msg","at"}
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS ota_ok BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS ota JSONB;
+
+-- Ảnh firmware ESP32 (.bin của idf.py build) tải lên để nạp OTA
+CREATE TABLE IF NOT EXISTS firmware (
+    id          SERIAL PRIMARY KEY,
+    version     TEXT NOT NULL,                          -- đọc từ esp_app_desc_t trong ảnh
+    project     TEXT NOT NULL DEFAULT '',
+    idf_ver     TEXT NOT NULL DEFAULT '',
+    built       TEXT NOT NULL DEFAULT '',               -- ngày giờ build ghi trong ảnh
+    chip        TEXT NOT NULL DEFAULT '',
+    size        INTEGER NOT NULL,
+    sha256      TEXT NOT NULL UNIQUE,
+    notes       TEXT NOT NULL DEFAULT '',
+    data        BYTEA NOT NULL,
+    uploaded_by TEXT,
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- Raw samples, 100 per second per sensor
 CREATE TABLE IF NOT EXISTS samples (

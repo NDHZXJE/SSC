@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './style.css'
 import { auth } from './api'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import Overview from './pages/Overview'
 import SensorDetail from './pages/SensorDetail'
 import Calibration from './pages/Calibration'
@@ -23,7 +24,8 @@ function useHash() {
 function App() {
   const hash = useHash()
   const user = auth.user
-  if (!auth.token || hash === '#/login') return <Login />
+  if (hash === '#/login') return <Login />
+  if (!auth.token) return <Landing />
 
   const [, page, arg] = hash.slice(1).split('/')
   let body
