@@ -1,5 +1,6 @@
 # Bí mật và file sinh ra
 .env
+.env.bak-*
 **/.env
 node_modules/
 **/dist/

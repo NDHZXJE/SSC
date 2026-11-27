@@ -1,4 +1,5 @@
 .env
+.env.bak-*
 node_modules/
 api/static/
 __pycache__/
