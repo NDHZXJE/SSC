@@ -169,7 +169,7 @@ function useSceneClock() {
 function SensorChip({ x, y, k, warn, rot = 0 }) {
   const c = warn ? '#f97316' : '#22d3ee'
   return (
-    <g transform={`translate(${x} ${y}) rotate(${rot})`}>
+    <g transform={`translate(${x} ${y}) rotate(${rot + 90})`}>
       <rect x="-4.5" y="-3" width="9" height="6" rx=".7" fill="#9aa2ad" stroke={c} strokeWidth={0.4 + k * 0.7} />
       <rect x="-4.5" y="-3" width="9" height="6" rx=".7" fill={c} opacity={k * 0.5} />
       <line x1="-3.5" x2="3.5" y1="-1.1" y2="-1.1" stroke="#b45309" strokeWidth=".8" />
