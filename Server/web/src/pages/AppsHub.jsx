@@ -269,77 +269,202 @@ function Dam() {
   )
 }
 
+// Khung nhà 4 tầng, mỗi chân cột đặt 1 khối SSC trong móng (C1..C4).
+// Chu kỳ 8 s: yên tĩnh → động đất (nền rung, tầng trên lắc mạnh hơn) → tắt dần.
+const EQ_COLS = [36, 68, 100, 132]
+const EQ_LV = [100, 82, 64, 46, 28]
+const EQ_DEAD = [22, 34, 34, 22]
+function eqEnv(t) {
+  const c = t % 8
+  if (c < 1 || c > 7) return 0
+  return Math.sin(Math.PI * (c - 1) / 6) ** 2
+}
+const eqAcc = t => eqEnv(t) * (Math.sin(9 * t) + 0.5 * Math.sin(15.3 * t + 1))
+
 function Buildings() {
-  const B = [[20, 40, 40, 80], [70, 20, 46, 100], [126, 50, 36, 70], [172, 30, 50, 90]]
+  const t = useSceneClock()
+  const env = eqEnv(t)
+  const g = 1.6 * eqAcc(t) // nền rung
+  const sway = j => g + env * 7 * Math.sin(5.2 * t - 0.4) * (j / 4) ** 1.2
+  const sTop = env * 7 * Math.sin(5.2 * t - 0.4)
+  const N = EQ_COLS.map((x, i) => EQ_DEAD[i] + 1.6 * sTop * (84 - x) / 48 * (i === 0 || i === 3 ? 1.6 : 0.6) + Math.abs(g) * 1.5)
+  const warn = N.map((n, i) => n > EQ_DEAD[i] * 1.25)
+  const quake = env > 0.05
+  const trace = Array.from({ length: 90 }, (_, k) => {
+    const tt = t - (89 - k) * 0.045
+    return `${k * 0.82},${-eqAcc(tt) * 5}`
+  }).join(' ')
   return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: 'linear-gradient(#0f2a3d 50%, #3f3a33 50%)' }}>
       <rect width="240" height="120" fill="url(#ahSky)" />
-      {B.map(([x, y, w, h], i) => (
-        <g key={i}>
-          <rect x={x} y={y} width={w} height={h} fill={i % 2 ? '#1e40af' : '#334155'} />
-          {Array.from({ length: Math.floor(h / 12) }, (_, r) => Array.from({ length: Math.floor(w / 10) }, (_, c) => (
-            <rect key={r + '-' + c} x={x + 3 + c * 10} y={y + 4 + r * 12} width="5" height="6"
-              className={(r * 7 + c * 3 + i) % 5 === 0 ? 'ah-win' : ''} fill="#93c5fd" opacity=".35" style={{ animationDelay: `${(r + c) * 0.3}s` }} />
-          )))}
-        </g>
-      ))}
-      <rect y="116" width="240" height="4" fill="#475569" />
-      {[40, 93, 197].map((x, i) => (
-        <g key={x}>
-          <rect x={x - 6} y="110" width="12" height="6" fill="#9aa2ad" stroke="#d97706" />
-          <circle cx={x} cy="112" r="5" className="ah-ring" style={{ animationDelay: `${i * 0.5}s` }} />
-        </g>
-      ))}
+      {/* sóng địa chấn */}
+      {quake && [0, 1, 2].map(i => <circle key={i} cx="84" cy="128" r={((t * 18 + i * 14) % 42)} fill="none" stroke="#f97316" strokeOpacity={env * (1 - ((t * 18 + i * 14) % 42) / 42)} strokeWidth=".6" />)}
+      <g transform={`translate(${g} 0)`}>
+        <rect x="-10" y="100" width="260" height="20" fill="#3f3a33" />
+        <rect x="-10" y="100" width="260" height="1" fill="#57534e" />
+        {/* móng + khối SSC */}
+        {EQ_COLS.map((x, i) => (
+          <g key={x}>
+            <rect x={x - 8} y="106" width="16" height="4" fill="#64748b" />
+            <SensorChip x={x} y={103} k={Math.min(1, Math.max(0, (N[i] - 18) / 18))} warn={warn[i]} rot={-90} />
+            <text x={x} y="116" fontSize="3.2" textAnchor="middle" fill={warn[i] ? '#f97316' : '#e2e8f0'}>C{i + 1}</text>
+          </g>
+        ))}
+      </g>
+      {/* khung nhà */}
+      {EQ_LV.slice(1).map((y, j) => {
+        const a = sway(j), b = sway(j + 1)
+        return (
+          <g key={y}>
+            {EQ_COLS.slice(0, 3).map((x, i) => (
+              <polygon key={x} points={`${x + 2 + a},${EQ_LV[j] - 1} ${x + 30 + a},${EQ_LV[j] - 1} ${x + 30 + b},${y + 2} ${x + 2 + b},${y + 2}`} fill="#1e3a5f" opacity=".55" />
+            ))}
+            {EQ_COLS.slice(0, 3).map((x, i) => (
+              <rect key={'w' + x} x={x + 10 + (a + b) / 2} y={y + 6} width="12" height="7" fill="#93c5fd" opacity={(i + j) % 3 ? 0.25 : 0.55} />
+            ))}
+            {EQ_COLS.map(x => <line key={'c' + x} x1={x + a} y1={EQ_LV[j]} x2={x + b} y2={y} stroke="#cbd5e1" strokeWidth="2.2" />)}
+            <rect x={32 + b} y={y - 1.5} width="104" height="3" fill="#94a3b8" />
+          </g>
+        )
+      })}
+      <text x="84" y="22" fontSize="3.4" textAnchor="middle" fill="#94a3b8">Nhà khung BTCT 4 tầng</text>
+      {/* chú thích vị trí SSC */}
+      <line x1="140" y1="103" x2="150" y2="94" stroke="#22d3ee" strokeWidth=".3" strokeDasharray="1 1" />
+      <text x="151" y="93" fontSize="3.2" fill="#22d3ee">SSC trong móng, dưới mỗi chân cột</text>
+      {/* bảng địa chấn + lực chân cột */}
+      <g transform="translate(150 6)">
+        <rect width="86" height="80" rx="3" fill="#0b1220" opacity=".9" stroke={quake ? '#f97316' : '#1e293b'} strokeWidth=".5" />
+        <text x="4" y="7" fontSize="3.6" fontWeight="700" fill={quake ? '#f97316' : '#4ade80'}>{quake ? '⚠ Đang có động đất' : '● Bình thường'}</text>
+        <text x="82" y="7" fontSize="3.2" fill="#94a3b8" textAnchor="end">{(env * 0.28).toFixed(2)} g</text>
+        <rect x="4" y="10" width="78" height="18" rx="1.5" fill="#111c2b" />
+        <polyline points={trace} transform="translate(5 19)" fill="none" stroke="#f97316" strokeWidth=".5" />
+        <text x="4" y="35" fontSize="3.2" fill="#94a3b8">Lực dọc chân cột (tấn)</text>
+        {N.map((n, i) => (
+          <g key={i} transform={`translate(4 ${39 + i * 9.5})`}>
+            <text y="3.6" fontSize="3.4" fill={warn[i] ? '#f97316' : '#cbd5e1'}>SSC-C{i + 1}</text>
+            <rect x="20" width="44" height="4" rx="1" fill="#1e293b" />
+            <rect x="20" width={44 * Math.min(1, n / 46)} height="4" rx="1" fill={warn[i] ? '#f97316' : '#22d3ee'} />
+            <text x="78" y="3.6" fontSize="3.4" fill="#e2e8f0" textAnchor="end">{n.toFixed(1)}</text>
+          </g>
+        ))}
+      </g>
     </svg>
   )
 }
 
-function Energy() {
-  const Turbine = ({ x, s, d }) => (
-    <g transform={`translate(${x} 40) scale(${s})`}>
-      <polygon points="-2,0 2,0 4,70 -4,70" fill="#e2e8f0" />
-      <g className="ah-spin" style={{ animationDuration: d }}>
-        {[0, 120, 240].map(a => <path key={a} d="M0 0 L-3 -6 L0 -34 L3 -6 Z" fill="#f8fafc" transform={`rotate(${a})`} />)}
-        <circle r="3" fill="#94a3b8" />
-      </g>
-    </g>
-  )
+// Mặt bằng đường 4 làn nhìn từ trên. Một hàng khối SSC chôn ngang đường (mỗi làn 1 khối).
+// Xe đè lên khối → khối sáng, đếm xe theo làn, phân loại xe con / xe tải theo lực ép.
+const TR_LINE = 120
+const TR_LANES = [
+  { y: 48, dir: -1, v: 46, cars: [[0, 'car', '#e2e8f0'], [130, 'truck', '#f59e0b'], [210, 'car', '#60a5fa']] },
+  { y: 64, dir: -1, v: 34, cars: [[40, 'bus', '#22c55e'], [190, 'car', '#f472b6']] },
+  { y: 80, dir: 1, v: 40, cars: [[20, 'car', '#ef4444'], [110, 'car', '#e2e8f0'], [220, 'truck', '#a78bfa']] },
+  { y: 96, dir: 1, v: 52, cars: [[70, 'car', '#fbbf24'], [180, 'car', '#38bdf8']] },
+]
+const TR_SPEC = { car: { len: 14, w: 7, t: 1.5 }, truck: { len: 26, w: 8, t: 14 }, bus: { len: 24, w: 8, t: 11 } }
+const TR_LOOP = 300
+
+function TopCar({ x, y, kind, color, dir }) {
+  const s = TR_SPEC[kind], L = s.len, W = s.w
   return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <rect width="240" height="120" fill="url(#ahSky)" />
-      <polygon points="120,120 180,60 240,80 240,120" fill="#92400e" opacity=".7" />
-      <Turbine x={50} s={1} d="3s" />
-      <Turbine x={100} s={0.75} d="2.4s" />
-      <path d="M150 50 l10 70 M170 50 l-10 70 M146 60 h28 M150 76 h20" stroke="#94a3b8" strokeWidth="2" fill="none" />
-      <path id="ahWire" d="M160 50 Q 200 70 240 56" stroke="#64748b" fill="none" />
-      <circle r="3" fill="#fbbf24" className="ah-glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M160 50 Q 200 70 240 56" /></circle>
-      <circle r="3" fill="#fbbf24" className="ah-glow"><animateMotion dur="1.6s" begin="-0.8s" repeatCount="indefinite" path="M160 50 Q 200 70 240 56" /></circle>
-      <rect y="110" width="240" height="10" fill="#0e3a52" />
-      <rect x="22" y="104" width="12" height="6" fill="#9aa2ad" stroke="#d97706" />
-      <circle cx="28" cy="106" r="5" className="ah-ring" />
-    </svg>
+    <g transform={`translate(${x} ${y}) scale(${dir} 1)`}>
+      <rect x={-L / 2 + .6} y={-W / 2 - .4} width={L - 1.2} height={W + .8} rx="1.6" fill="#000" opacity=".25" />
+      {kind === 'truck' ? (
+        <>
+          <rect x={-L / 2} y={-W / 2} width={L - 7} height={W} rx=".8" fill="#e2e8f0" />
+          <rect x={L / 2 - 6} y={-W / 2 + .5} width="6" height={W - 1} rx="1.2" fill={color} />
+          <rect x={L / 2 - 2.4} y={-W / 2 + 1.2} width="1.6" height={W - 2.4} rx=".4" fill="#0f172a" opacity=".7" />
+        </>
+      ) : (
+        <>
+          <rect x={-L / 2} y={-W / 2} width={L} height={W} rx={kind === 'bus' ? 1 : 2.4} fill={color} />
+          {kind === 'bus'
+            ? <>{[-8, -4, 0, 4, 8].map(k => <rect key={k} x={k - 1.2} y={-W / 2 + 1} width="2.6" height={W - 2} fill="#0f172a" opacity=".35" />)}<rect x={L / 2 - 2.6} y={-W / 2 + 1} width="1.6" height={W - 2} fill="#0f172a" opacity=".7" /></>
+            : <><rect x={L / 2 - 6} y={-W / 2 + .9} width="2.4" height={W - 1.8} rx=".6" fill="#0f172a" opacity=".75" />
+              <rect x={-L / 2 + 1.6} y={-W / 2 + 1.1} width="1.8" height={W - 2.2} rx=".6" fill="#0f172a" opacity=".6" />
+              <rect x={-L / 2 + 3.6} y={-W / 2 + 1} width={L - 10} height={W - 2} rx="1" fill="#fff" opacity=".18" /></>}
+        </>
+      )}
+      <rect x={L / 2 - .8} y={-W / 2 + .6} width=".8" height="1.2" fill="#fde68a" />
+      <rect x={L / 2 - .8} y={W / 2 - 1.8} width=".8" height="1.2" fill="#fde68a" />
+    </g>
   )
 }
 
 function Traffic() {
-  const [n, setN] = useState(1284)
-  useEffect(() => {
-    const id = setInterval(() => setN(v => v + 1 + (v % 3 === 0 ? 1 : 0)), 900)
-    return () => clearInterval(id)
-  }, [])
+  const t = useSceneClock()
+  let nCar = 0, nTruck = 0
+  const lanes = TR_LANES.map(l => {
+    let hot = 0, cnt = 0
+    const vs = l.cars.map(([off, kind, color]) => {
+      const p = off + l.v * t
+      const u = (p % TR_LOOP) - 30
+      const x = l.dir > 0 ? u : 240 - u
+      const passes = Math.max(0, Math.floor((p - (TR_LINE + 30)) / TR_LOOP) + 1)
+      cnt += passes
+      if (kind === 'car') nCar += passes; else nTruck += passes
+      if (Math.abs(x - TR_LINE) < TR_SPEC[kind].len / 2) hot = Math.max(hot, TR_SPEC[kind].t)
+      return { x, kind, color }
+    })
+    return { ...l, vs, hot, cnt }
+  })
+  const base = 1180
+  const flow = base + (nCar + nTruck) * 3
   return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <rect width="240" height="120" fill="url(#ahSky)" />
-      <polygon points="0,120 0,70 240,50 240,120" fill="#14532d" opacity=".5" />
-      <polygon points="0,112 0,84 240,62 240,80" fill="#334155" />
-      <path d="M0 98 L240 71" stroke="#e5e7eb" strokeDasharray="10 8" className="ah-lane" />
-      <g className="ah-car ah-car-road"><rect x="-20" y="88" width="16" height="8" rx="2" fill="#f59e0b" /></g>
-      <g className="ah-car ah-car-road2"><rect x="-20" y="98" width="20" height="9" rx="2" fill="#60a5fa" /></g>
-      <g className="ah-car ah-car-road3"><rect x="-20" y="80" width="12" height="7" rx="2" fill="#e2e8f0" /></g>
-      {[60, 150].map((x, i) => <rect key={x} x={x - 7} y={i ? 72 : 82} width="14" height="4" fill="#22d3ee" className="ah-blink" style={{ animationDelay: `${i * 0.5}s` }} />)}
-      <rect x="150" y="8" width="82" height="30" rx="6" fill="#0b1118" stroke="#22d3ee" strokeOpacity=".6" />
-      <text x="191" y="20" textAnchor="middle" fontSize="8" fill="#93a1b2">xe / giờ</text>
-      <text x="191" y="33" textAnchor="middle" fontSize="12" fontWeight="700" fill="#fbbf24" fontFamily="ui-monospace,monospace">{n.toLocaleString('vi-VN')}</text>
+    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
+      style={{ background: '#14532d' }}>
+      <rect width="240" height="120" fill="#123d26" />
+      {/* vỉa hè + đường */}
+      <rect y="36" width="240" height="4" fill="#64748b" />
+      <rect y="104" width="240" height="4" fill="#64748b" />
+      <rect y="40" width="240" height="64" fill="#334155" />
+      <line x1="0" x2="240" y1="71.4" y2="71.4" stroke="#fbbf24" strokeWidth=".6" />
+      <line x1="0" x2="240" y1="72.6" y2="72.6" stroke="#fbbf24" strokeWidth=".6" />
+      {[56, 88].map(y => <line key={y} x1="0" x2="240" y1={y} y2={y} stroke="#e5e7eb" strokeWidth=".6" strokeDasharray="6 5" />)}
+      <path d="M8 48 l-4 0 m0 0 l2 -1.5 m-2 1.5 l2 1.5 M8 64 l-4 0 m0 0 l2 -1.5 m-2 1.5 l2 1.5" stroke="#94a3b8" strokeWidth=".5" fill="none" />
+      <path d="M232 80 l4 0 m0 0 l-2 -1.5 m2 1.5 l-2 1.5 M232 96 l4 0 m0 0 l-2 -1.5 m2 1.5 l-2 1.5" stroke="#94a3b8" strokeWidth=".5" fill="none" />
+      {/* hàng SSC chôn dưới mặt đường */}
+      <rect x={TR_LINE - 5} y="40" width="10" height="64" fill="#0b1220" opacity=".35" />
+      {lanes.map((l, i) => {
+        const k = Math.min(1, l.hot / 10)
+        return (
+          <g key={i}>
+            <rect x={TR_LINE - 3.5} y={l.y - 5.5} width="7" height="11" rx=".8" fill="#9aa2ad" stroke="#22d3ee" strokeWidth={0.4 + k * 0.8} strokeDasharray={l.hot ? '0' : '1 .6'} />
+            <rect x={TR_LINE - 3.5} y={l.y - 5.5} width="7" height="11" rx=".8" fill="#22d3ee" opacity={k * 0.6} />
+            <line x1={TR_LINE - 2.5} x2={TR_LINE + 2.5} y1={l.y - 2} y2={l.y - 2} stroke="#b45309" strokeWidth=".8" />
+            <line x1={TR_LINE - 2.5} x2={TR_LINE + 2.5} y1={l.y + 2} y2={l.y + 2} stroke="#b45309" strokeWidth=".8" />
+          </g>
+        )
+      })}
+      {lanes.map((l, i) => l.vs.map((c, j) => <TopCar key={i + '-' + j} x={c.x} y={l.y} kind={c.kind} color={c.color} dir={l.dir} />))}
+      {/* nhãn từng làn */}
+      {lanes.map((l, i) => (
+        <g key={'lb' + i}>
+          <text x={TR_LINE + 6} y={l.y + 1.2} fontSize="3" fill={l.hot ? '#22d3ee' : '#94a3b8'}>L{i + 1}</text>
+        </g>
+      ))}
+      <line x1={TR_LINE} x2={TR_LINE} y1="108" y2="109" stroke="#22d3ee" strokeWidth=".3" />
+      <rect x={TR_LINE - 40} y="109" width="80" height="7" rx="2" fill="#0b1220" stroke="#22d3ee" strokeWidth=".3" />
+      <text x={TR_LINE} y="113.8" fontSize="3.3" fill="#e2e8f0" textAnchor="middle">Hàng SSC chôn dưới mặt đường, mỗi làn 1 khối</text>
+      {/* bảng thống kê */}
+      <g transform="translate(4 3)">
+        <rect width="232" height="30" rx="3" fill="#0b1220" opacity=".92" stroke="#1e293b" strokeWidth=".4" />
+        <text x="5" y="8" fontSize="3.3" fill="#94a3b8">Lưu lượng</text>
+        <text x="5" y="20" fontSize="9" fontWeight="700" fill="#fbbf24" fontFamily="ui-monospace,monospace">{flow.toLocaleString('vi-VN')}</text>
+        <text x="5" y="26.5" fontSize="3" fill="#94a3b8">xe / giờ</text>
+        <text x="60" y="8" fontSize="3.3" fill="#94a3b8">Phân loại theo tải</text>
+        <text x="60" y="16" fontSize="3.6" fill="#e2e8f0">Xe con: <tspan fill="#22d3ee">{nCar}</tspan></text>
+        <text x="60" y="23" fontSize="3.6" fill="#e2e8f0">Xe tải, buýt: <tspan fill="#f59e0b">{nTruck}</tspan></text>
+        <text x="124" y="8" fontSize="3.3" fill="#94a3b8">Xe qua từng làn</text>
+        {lanes.map((l, i) => (
+          <g key={i} transform={`translate(${124 + i * 27} 12)`}>
+            <rect width="24" height="14" rx="2" fill={l.hot ? '#0e3a52' : '#111c2b'} stroke={l.hot ? '#22d3ee' : '#1e293b'} strokeWidth=".4" />
+            <text x="12" y="5.4" fontSize="3" fill="#94a3b8" textAnchor="middle">L{i + 1} {l.dir > 0 ? '→' : '←'}{l.hot ? <tspan fill="#fbbf24"> · {l.hot} t</tspan> : ''}</text>
+            <text x="12" y="11.6" fontSize="4.6" fontWeight="700" fill="#e2e8f0" textAnchor="middle">{l.cnt}</text>
+          </g>
+        ))}
+      </g>
     </svg>
   )
 }
@@ -367,45 +492,18 @@ function Twin() {
   )
 }
 
-function Warning() {
-  return (
-    <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <rect width="240" height="120" fill="url(#ahStorm)" />
-      <g className="ah-rain">{Array.from({ length: 18 }, (_, i) => <line key={i} x1={i * 14} y1={(i * 13) % 40} x2={i * 14 - 4} y2={(i * 13) % 40 + 10} stroke="#93c5fd" strokeOpacity=".5" />)}</g>
-      <path d="M150 40 l6 -20 l6 30 l6 -16 l6 26" stroke="#94a3b8" fill="none" strokeWidth="2" />
-      <polygon points="40,62 75,36 110,62" fill="#c2410c" />
-      <rect x="48" y="62" width="54" height="34" fill="#f1f5f9" />
-      <rect x="70" y="74" width="12" height="22" fill="#475569" />
-      <g className="ah-flood">
-        <rect x="0" y="94" width="240" height="30" fill="#0e7490" opacity=".75" />
-        <path className="ah-wave" d="M-40 94 q10 -5 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" stroke="#a5f3fc" fill="none" />
-      </g>
-      <g className="ah-alert">
-        <polygon points="190,52 212,90 168,90" fill="#f59e0b" stroke="#fde68a" />
-        <rect x="188" y="64" width="4" height="14" fill="#0b0f14" /><rect x="188" y="81" width="4" height="4" fill="#0b0f14" />
-      </g>
-      <g className="ah-alert" style={{ animationDelay: '.5s' }}>
-        <polygon points="128,30 142,54 114,54" fill="#f59e0b" />
-        <rect x="126" y="38" width="3" height="9" fill="#0b0f14" />
-      </g>
-    </svg>
-  )
-}
-
 const APPS = [
   ['weigh', 'Cân xe khi đang chạy', 'Cụm 4 cục SSC chôn dọc làn xe dưới lớp móng. Xe chạy qua, từng trục ép lần lượt lên các cục, hệ thống đọc tải và cộng ra trọng lượng xe mà không cần dừng xe.', RoadScene, 12000],
   ['bridge', 'Giám sát sức khỏe công trình cầu đường', 'Khối SSC đặt tại gối cầu trên mố và trụ, đo lực truyền xuống khi xe chạy qua, phát hiện sớm lún, nứt hay quá tải.', Bridge],
   ['dam', 'Quan trắc đê điều, mái dốc', 'Khối SSC gắn sát mặt thượng lưu đập ở nhiều cao độ để đo áp lực nước, và chôn dọc mái dốc để phát hiện sớm khối đất bắt đầu trượt.', Dam],
-  ['building', 'Quan trắc công trình dân dụng', 'Cột, dầm, sàn tự báo tải trọng và biến dạng trong suốt vòng đời công trình.', Buildings],
-  ['traffic', 'Quản lý lưu lượng giao thông', 'Đếm xe, đo tải trục và cân xe khi đang chạy ngay dưới mặt đường.', Traffic],
-  ['energy', 'Hạ tầng năng lượng', 'Móng tua-bin gió, trụ điện, trạm biến áp được giám sát liên tục.', Energy],
+  ['building', 'Quan trắc công trình dân dụng', 'Mỗi chân cột đặt một khối SSC trong móng. Khi động đất, hệ thống thấy ngay cột nào bị ép quá tải để cảnh báo và kiểm tra sau sự cố.', Buildings, 10000],
+  ['traffic', 'Quản lý lưu lượng giao thông', 'Một hàng khối SSC chôn ngang đường, mỗi làn một khối. Xe đè qua là được đếm theo làn và phân loại xe con hay xe tải theo lực ép.', Traffic, 9000],
   ['twin', 'Bản sao số hạ tầng, đô thị', 'Dữ liệu từ hàng nghìn cục SSC đổ về mô hình số của cả thành phố.', Twin],
-  ['warn', 'Cảnh báo sớm thiên tai', 'Đánh giá rủi ro hạ tầng khi bão, lũ, sạt lở và gửi cảnh báo kịp thời.', Warning],
 ]
 
 // tên ngắn cho hàng tab
 const SHORT = { weigh: 'Cân xe', bridge: 'Cầu đường', dam: 'Đê điều, mái dốc', building: 'Dân dụng', traffic: 'Giao thông',
-  energy: 'Năng lượng', twin: 'Bản sao số', warn: 'Cảnh báo thiên tai' }
+  twin: 'Bản sao số' }
 
 const AUTO_MS = 6000 // cảnh cân xe dài hơn để xe kịp chạy qua cụm cục
 
@@ -444,7 +542,6 @@ export function AppsHub() {
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
         <defs>
           <linearGradient id="ahSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f2a3d" /><stop offset="1" stopColor="#0b1520" /></linearGradient>
-          <linearGradient id="ahStorm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e293b" /><stop offset="1" stopColor="#0f172a" /></linearGradient>
         </defs>
       </svg>
 
