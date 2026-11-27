@@ -469,83 +469,113 @@ function Traffic() {
   )
 }
 
-// Bản sao số Đà Nẵng (sơ đồ cách điệu, không đúng tỉ lệ bản đồ).
-// Mỗi ô lưới là một cụm SSC dưới mặt đường / móng công trình; màu ô = tải trọng đo được.
-// Giờ trong ngày chạy vòng 6h→22h, tải dồn về trung tâm và các cầu vào giờ cao điểm.
-const DN_LAND = 'M0 120 L0 30 Q30 18 70 16 Q115 14 150 22 L160 24 Q170 30 176 26 Q184 8 210 6 Q232 8 230 20 Q214 30 192 34 Q180 64 194 120 Z'
-const DN_RIVER = 'M112 120 Q118 92 132 72 Q148 50 154 23'
-const DN_SPOTS = [
-  // x, y, bán kính, tải nền, hệ số giờ cao điểm, tên
-  [126, 56, 22, .45, .55, 'Hải Châu'],
-  [142, 52, 9, .35, .75, 'Cầu Rồng'],
-  [146, 38, 8, .3, .7, 'Cầu sông Hàn'],
-  [205, 26, 10, .55, .2, 'Cảng Tiên Sa'],
-  [36, 36, 18, .5, .3, 'KCN Hòa Khánh'],
-  [96, 72, 12, .4, .35, 'Sân bay'],
-  [84, 42, 16, .3, .45, 'Thanh Khê'],
-  [80, 100, 16, .25, .35, 'Cẩm Lệ'],
-  [166, 96, 15, .2, .3, 'Ngũ Hành Sơn'],
-  [170, 46, 14, .25, .4, 'Sơn Trà'],
+// Bản sao số thu nhỏ: một khu phố Hải Châu cạnh Cầu Rồng (sơ đồ cách điệu).
+// Mỗi ô vuông nhỏ là một cục SSC: dưới mặt đường (dọc các phố) và dưới móng từng tòa nhà.
+// Màu cục = tải đo được; xe chạy qua làm cục dưới đường đổi màu theo thời gian thực.
+const TW_H = [28, 62, 96] // phố ngang (y)
+const TW_V = [36, 84, 132] // phố dọc (x)
+const TW_XB = [0, 36, 84, 132, 150], TW_YB = [0, 28, 62, 96, 120]
+const TW_ROAD_END = 150
+const TW_NODES = []
+TW_H.forEach(y => { for (let x = 8; x < TW_ROAD_END; x += 14) if (!TW_V.some(v => Math.abs(v - x) < 5)) TW_NODES.push({ x, y, base: .12, road: true }) })
+TW_V.forEach(x => { for (let y = 8; y < 120; y += 14) if (!TW_H.some(h => Math.abs(h - y) < 5)) TW_NODES.push({ x, y, base: .12, road: true }) })
+TW_H.forEach(y => TW_V.forEach(x => TW_NODES.push({ x, y, base: .2, road: true })))
+TW_NODES.push({ x: 163, y: 62, base: .25, road: true, bridge: true })
+const TW_BLD = []
+for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+  const x0 = TW_XB[i] + 5, x1 = TW_XB[i + 1] - 5, y0 = TW_YB[j] + 5, y1 = TW_YB[j + 1] - 5
+  if (x1 - x0 < 6 || y1 - y0 < 6) continue
+  const h = ((i * 7 + j * 5) % 6) / 5 // tầng cao tương đối
+  TW_BLD.push({ x0, y0, w: x1 - x0, h: y1 - y0, lvl: h })
+  TW_NODES.push({ x: (x0 + x1) / 2, y: (y0 + y1) / 2, base: .25 + .55 * h, bld: true })
+}
+const TW_CARS = [
+  { axis: 'h', line: 62, v: 30, off: 0, w: .9 }, { axis: 'h', line: 62, v: -26, off: 90, w: .5 },
+  { axis: 'h', line: 28, v: 22, off: 40, w: .5 }, { axis: 'h', line: 96, v: -20, off: 10, w: .7 },
+  { axis: 'v', line: 84, v: 18, off: 20, w: .9 }, { axis: 'v', line: 36, v: -16, off: 60, w: .5 },
+  { axis: 'v', line: 132, v: 24, off: 0, w: .6 },
 ]
-const DN_LABELS = [[36, 46, 'Liên Chiểu'], [80, 34, 'Thanh Khê'], [118, 64, 'Hải Châu'], [168, 56, 'Sơn Trà'], [76, 110, 'Cẩm Lệ'], [162, 108, 'Ngũ Hành Sơn']]
-const DN_CELL = 6
-const DN_GRID = []
-for (let y = 4; y < 120; y += DN_CELL) for (let x = 0; x < 234; x += DN_CELL) DN_GRID.push([x, y])
 const heatColor = v => `hsl(${Math.round(200 - 200 * Math.min(1, v))} 85% ${48 + 6 * Math.min(1, v)}%)`
 
 function Twin() {
   const t = useSceneClock()
   const hour = 6 + (t * 1.4) % 16
   const rush = Math.exp(-((hour - 7.5) ** 2) / 1.2) + Math.exp(-((hour - 17.5) ** 2) / 1.5)
-  const amp = DN_SPOTS.map(([, , , b, r], i) => b + r * rush + 0.06 * Math.sin(t * 1.3 + i))
-  const field = (x, y) => DN_SPOTS.reduce((s, [sx, sy, R], i) => s + amp[i] * Math.exp(-((x - sx) ** 2 + (y - sy) ** 2) / (R * R)), 0.08)
-  const cells = DN_GRID.map(([x, y]) => 1.5 * field(x + DN_CELL / 2, y + DN_CELL / 2) - 0.1)
-  const hot = DN_SPOTS.reduce((a, s, i) => (amp[i] > amp[a] ? i : a), 0)
-  const avg = cells.reduce((s, v) => s + v, 0) / cells.length
-  const hh = Math.floor(hour), mm = Math.floor((hour - hh) * 60 / 10) * 10
+  const cars = TW_CARS.map(c => {
+    const span = c.axis === 'h' ? 190 : 140
+    const u = (((c.off + c.v * t) % span) + span) % span - 10
+    return c.axis === 'h' ? { ...c, x: u, y: c.line - (c.v > 0 ? -2.2 : 2.2) } : { ...c, x: c.line + (c.v > 0 ? 2.2 : -2.2), y: u }
+  })
+  const load = TW_NODES.map(n => {
+    let v = n.base * (n.bld ? 1 : 1 + 1.2 * rush)
+    if (n.road) cars.forEach(c => { v += c.w * Math.exp(-((c.x - n.x) ** 2 + (c.y - n.y) ** 2) / 40) })
+    return Math.min(1, v)
+  })
+  const hot = load.reduce((a, v, i) => (v > load[a] ? i : a), 0)
+  const hh = Math.floor(hour), mm = Math.floor((hour - hh) * 6) * 10
   return (
     <svg viewBox="0 0 240 120" className="ah-svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true"
-      style={{ background: '#0e3a52' }}>
-      <defs><clipPath id="ahDnLand"><path d={DN_LAND} /></clipPath></defs>
-      <rect width="240" height="120" fill="#0e3a52" />
-      <text x="40" y="9" fontSize="3.4" fill="#7dd3fc" opacity=".7">Vịnh Đà Nẵng</text>
-      <text x="214" y="46" fontSize="3.4" fill="#7dd3fc" opacity=".7" textAnchor="middle">Biển Đông</text>
-      <path d={DN_LAND} fill="#1e293b" />
-      <g clipPath="url(#ahDnLand)">
-        {DN_GRID.map(([x, y], i) => (
-          <rect key={i} x={x + .4} y={y + .4} width={DN_CELL - .8} height={DN_CELL - .8} rx="1" fill={heatColor(cells[i])} opacity={0.35 + 0.5 * Math.min(1, cells[i])} />
-        ))}
-        {DN_GRID.map(([x, y], i) => <circle key={'n' + i} cx={x + DN_CELL / 2} cy={y + DN_CELL / 2} r=".35" fill="#e2e8f0" opacity=".6" />)}
+      style={{ background: '#111827' }}>
+      <rect width="240" height="120" fill="#111827" />
+      {/* sông Hàn + bờ đông */}
+      <path d="M150 0 L176 0 L176 120 L150 120 Z" fill="#0e3a52" />
+      <path d="M152 0 q3 30 0 60 t0 60" stroke="#38bdf8" strokeOpacity=".25" fill="none" />
+      <text x="157" y="100" fontSize="3" fill="#7dd3fc" transform="rotate(-90 157 100)">sông Hàn</text>
+      <rect x="176" y="0" width="14" height="120" fill="#1f2937" />
+      {/* nhà */}
+      {TW_BLD.map((b, i) => <rect key={i} x={b.x0} y={b.y0} width={b.w} height={b.h} rx="1" fill="#334155" opacity={.5 + .4 * b.lvl} stroke="#475569" strokeWidth=".3" />)}
+      {/* đường + cầu */}
+      {TW_H.map(y => <rect key={y} x="0" y={y - 4.5} width={TW_ROAD_END} height="9" fill="#2b3442" />)}
+      {TW_V.map(x => <rect key={x} x={x - 4.5} y="0" width="9" height="120" fill="#2b3442" />)}
+      <rect x={TW_ROAD_END} y="57.5" width="40" height="9" fill="#475569" />
+      <path d={`M${TW_ROAD_END} 57.5 q13 -8 26 0`} stroke="#fbbf24" strokeWidth=".8" fill="none" />
+      <text x="163" y="52" fontSize="3" fill="#fbbf24" textAnchor="middle">Cầu Rồng</text>
+      {TW_H.map(y => <line key={'l' + y} x1="0" x2="190" y1={y} y2={y} stroke="#64748b" strokeWidth=".3" strokeDasharray="3 3" />)}
+      {TW_V.map(x => <line key={'l' + x} x1={x} x2={x} y1="0" y2="120" stroke="#64748b" strokeWidth=".3" strokeDasharray="3 3" />)}
+      {/* xe */}
+      {cars.map((c, i) => <rect key={i} x={c.x - (c.axis === 'h' ? 3 : 1.4)} y={c.y - (c.axis === 'h' ? 1.4 : 3)} width={c.axis === 'h' ? 6 : 2.8} height={c.axis === 'h' ? 2.8 : 6} rx=".8" fill="#f8fafc" opacity=".9" />)}
+      {/* cục SSC */}
+      {TW_NODES.map((n, i) => {
+        const v = load[i], s = n.bld ? 5 : 3.6
+        return (
+          <g key={i}>
+            <circle cx={n.x} cy={n.y} r={s * .6 + 4 * v} fill={heatColor(v)} opacity={.18 + .25 * v} />
+            <rect x={n.x - s / 2} y={n.y - s / 2} width={s} height={s} rx=".5" fill={heatColor(v)} stroke="#0b1220" strokeWidth=".3" />
+            <line x1={n.x - s / 2 + .7} x2={n.x + s / 2 - .7} y1={n.y - s / 5} y2={n.y - s / 5} stroke="#0b1220" strokeWidth=".35" />
+            <line x1={n.x - s / 2 + .7} x2={n.x + s / 2 - .7} y1={n.y + s / 5} y2={n.y + s / 5} stroke="#0b1220" strokeWidth=".35" />
+          </g>
+        )
+      })}
+      <circle cx={TW_NODES[hot].x} cy={TW_NODES[hot].y} r="5" className="ah-ring" style={{ stroke: '#f97316' }} />
+      <g transform={`translate(${Math.min(TW_NODES[hot].x + 5, 160)} ${Math.max(TW_NODES[hot].y - 11, 3)})`}>
+        <rect width="22" height="7" rx="1.5" fill="#0b1220" stroke="#f97316" strokeWidth=".3" />
+        <text x="11" y="4.8" fontSize="3" fill="#f8fafc" textAnchor="middle">{(load[hot] * 180).toFixed(0)} kPa</text>
       </g>
-      <path d={DN_LAND} fill="none" stroke="#7dd3fc" strokeOpacity=".5" strokeWidth=".5" />
-      <path d={DN_RIVER} fill="none" stroke="#0e3a52" strokeWidth="3.4" />
-      <text x="128" y="96" fontSize="2.8" fill="#7dd3fc" transform="rotate(-58 128 96)">sông Hàn</text>
-      {/* cầu */}
-      {[[136, 52, 148, 54], [141, 38, 152, 40]].map(([a, b, c, d], i) => <line key={i} x1={a} y1={b} x2={c} y2={d} stroke="#f8fafc" strokeWidth=".9" />)}
-      {DN_LABELS.map(([x, y, n]) => (
-        <text key={n} x={x} y={y} fontSize="3.4" fontWeight="700" fill="#f8fafc" textAnchor="middle" stroke="#0b1220" strokeWidth=".8" paintOrder="stroke">{n}</text>
-      ))}
-      {/* điểm nóng */}
-      <circle cx={DN_SPOTS[hot][0]} cy={DN_SPOTS[hot][1]} r="4" className="ah-ring" style={{ stroke: '#f97316' }} />
       {/* bảng */}
-      <g transform="translate(196 54)">
-        <rect width="42" height="62" rx="3" fill="#0b1220" opacity=".92" stroke="#1e293b" strokeWidth=".4" />
-        <text x="3" y="6.5" fontSize="3.2" fontWeight="700" fill="#e2e8f0">Bản sao số</text>
-        <text x="3" y="11" fontSize="2.8" fill="#94a3b8">TP. Đà Nẵng</text>
-        <text x="39" y="11" fontSize="3.6" fontWeight="700" fill="#fbbf24" textAnchor="end" fontFamily="ui-monospace,monospace">{String(hh).padStart(2, '0')}:{String(mm).padStart(2, '0')}</text>
-        <text x="3" y="18" fontSize="2.7" fill="#94a3b8">Nút SSC</text>
-        <text x="39" y="18" fontSize="3" fill="#e2e8f0" textAnchor="end">12.480</text>
-        <text x="3" y="23.5" fontSize="2.7" fill="#94a3b8">Tải TB</text>
-        <text x="39" y="23.5" fontSize="3" fill="#e2e8f0" textAnchor="end">{(avg * 90 + 10).toFixed(0)} kPa</text>
-        <text x="3" y="29" fontSize="2.7" fill="#94a3b8">Giờ cao điểm</text>
-        <text x="39" y="29" fontSize="3" fill={rush > 0.4 ? '#f97316' : '#4ade80'} textAnchor="end">{rush > 0.4 ? 'Có' : 'Không'}</text>
-        <text x="3" y="36" fontSize="2.7" fill="#94a3b8">Điểm nóng</text>
-        <text x="3" y="41" fontSize="3.2" fontWeight="700" fill="#f97316">{DN_SPOTS[hot][5]}</text>
-        <defs><linearGradient id="ahDnLeg"><stop offset="0" stopColor={heatColor(0)} /><stop offset=".5" stopColor={heatColor(.5)} /><stop offset="1" stopColor={heatColor(1)} /></linearGradient></defs>
-        <text x="3" y="48" fontSize="2.6" fill="#94a3b8">Tải trọng phân bố</text>
-        <rect x="3" y="50" width="36" height="3" rx="1" fill="url(#ahDnLeg)" />
-        <text x="3" y="57.5" fontSize="2.5" fill="#94a3b8">thấp</text>
-        <text x="39" y="57.5" fontSize="2.5" fill="#94a3b8" textAnchor="end">cao</text>
+      <g transform="translate(193 4)">
+        <rect width="45" height="112" rx="3" fill="#0b1220" opacity=".95" stroke="#1e293b" strokeWidth=".4" />
+        <text x="3" y="7" fontSize="3.4" fontWeight="700" fill="#e2e8f0">Bản sao số</text>
+        <text x="3" y="11.5" fontSize="2.8" fill="#94a3b8">Khu Hải Châu, Đà Nẵng</text>
+        <text x="3" y="20" fontSize="2.8" fill="#94a3b8">Giờ</text>
+        <text x="42" y="20" fontSize="4" fontWeight="700" fill="#fbbf24" textAnchor="end" fontFamily="ui-monospace,monospace">{String(hh).padStart(2, '0')}:{String(mm).padStart(2, '0')}</text>
+        <text x="3" y="27" fontSize="2.8" fill="#94a3b8">Cao điểm</text>
+        <text x="42" y="27" fontSize="3" fill={rush > 0.4 ? '#f97316' : '#4ade80'} textAnchor="end">{rush > 0.4 ? 'Có' : 'Không'}</text>
+        <text x="3" y="36" fontSize="2.8" fill="#94a3b8">Chú thích</text>
+        <rect x="3" y="39" width="3.6" height="3.6" rx=".5" fill="#22d3ee" /><text x="9" y="42" fontSize="2.7" fill="#cbd5e1">SSC mặt đường</text>
+        <rect x="3" y="45" width="5" height="5" rx=".5" fill="#22d3ee" /><text x="9" y="48.8" fontSize="2.7" fill="#cbd5e1">SSC móng nhà</text>
+        <defs><linearGradient id="ahTwLeg"><stop offset="0" stopColor={heatColor(0)} /><stop offset=".5" stopColor={heatColor(.5)} /><stop offset="1" stopColor={heatColor(1)} /></linearGradient></defs>
+        <text x="3" y="57" fontSize="2.8" fill="#94a3b8">Mức tải trọng</text>
+        <rect x="3" y="59.5" width="39" height="3.4" rx="1" fill="url(#ahTwLeg)" />
+        <text x="3" y="67" fontSize="2.5" fill="#94a3b8">thấp</text>
+        <text x="22.5" y="67" fontSize="2.5" fill="#94a3b8" textAnchor="middle">vừa</text>
+        <text x="42" y="67" fontSize="2.5" fill="#94a3b8" textAnchor="end">cao</text>
+        <text x="3" y="76" fontSize="2.8" fill="#94a3b8">Cục SSC trong khu</text>
+        <text x="42" y="76" fontSize="3" fill="#e2e8f0" textAnchor="end">{TW_NODES.length}</text>
+        <text x="3" y="82" fontSize="2.8" fill="#94a3b8">Toàn thành phố</text>
+        <text x="42" y="82" fontSize="3" fill="#e2e8f0" textAnchor="end">12.480</text>
+        <text x="3" y="92" fontSize="2.8" fill="#94a3b8">Tải lớn nhất</text>
+        <text x="3" y="98" fontSize="3.2" fontWeight="700" fill="#f97316">{TW_NODES[hot].bridge ? 'Cầu Rồng' : TW_NODES[hot].bld ? 'Móng nhà cao tầng' : 'Mặt đường'}</text>
+        <text x="3" y="104" fontSize="3" fill="#e2e8f0">{(load[hot] * 180).toFixed(0)} kPa</text>
       </g>
     </svg>
   )
@@ -557,7 +587,7 @@ const APPS = [
   ['dam', 'Quan trắc đê điều, mái dốc', 'Khối SSC gắn sát mặt thượng lưu đập ở nhiều cao độ để đo áp lực nước, và chôn dọc mái dốc để phát hiện sớm khối đất bắt đầu trượt.', Dam],
   ['building', 'Quan trắc công trình dân dụng', 'Mỗi chân cột đặt một khối SSC trong móng. Khi động đất, hệ thống thấy ngay cột nào bị ép quá tải để cảnh báo và kiểm tra sau sự cố.', Buildings, 10000],
   ['traffic', 'Quản lý lưu lượng giao thông', 'Một hàng khối SSC chôn ngang đường, mỗi làn một khối. Xe đè qua là được đếm theo làn và phân loại xe con hay xe tải theo lực ép.', Traffic, 9000],
-  ['twin', 'Bản sao số: bản đồ tải trọng cả thành phố', 'Hàng nghìn cụm SSC dưới mặt đường và móng công trình khắp Đà Nẵng gửi số liệu về một bản đồ tải trọng sống. Thành phố thấy tải dồn về đâu theo từng giờ, nhất là các cầu và trung tâm vào giờ cao điểm.', Twin, 10000],
+  ['twin', 'Bản sao số: bản đồ tải trọng đô thị', 'Mỗi cục SSC dưới mặt đường và móng nhà gửi số liệu về bản sao số. Màu từng cục cho thấy mức tải ngay lúc đó; ghép hàng nghìn khu như thế này sẽ ra bản đồ tải trọng của cả Đà Nẵng.', Twin, 10000],
 ]
 
 // tên ngắn cho hàng tab
