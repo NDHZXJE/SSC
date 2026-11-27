@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 
 // Cảnh minh họa: cục SSC chôn dưới mặt đường, xe tải chạy qua, hệ thống đo tải từng trục và ước tính trọng lượng xe.
 const W = 960
-const BLOCK_X = 470           // tâm cục bê tông (theo trục x của SVG)
+const BLOCKS = [              // cụm cục SSC chôn dọc làn xe (x tâm cục) và màu vệt tín hiệu
+  { id: 'R-01', x: 190, c: '#fbbf24' },
+  { id: 'R-02', x: 350, c: '#22d3ee' },
+  { id: 'R-03', x: 510, c: '#a78bfa' },
+  { id: 'R-04', x: 670, c: '#4ade80' },
+]
+const LAST_X = BLOCKS[BLOCKS.length - 1].x
 const PERIOD = 9000           // ms cho một lượt xe
 const AXLES = [               // vị trí trục so với đầu xe (px) và tải trục (tấn)
   { dx: 38, t: 6.5 },
@@ -30,25 +36,29 @@ export default function RoadScene() {
   const t = useLoop()
   const front = -TRUCK_LEN + t * (W + TRUCK_LEN * 2)   // x của đầu xe (xe chạy từ trái sang phải, đầu xe bên phải)
   const axleX = AXLES.map(a => front - a.dx)
-  const load = AXLES.reduce((s, a, i) => s + a.t * Math.exp(-(((axleX[i] - BLOCK_X) / SPREAD) ** 2)), 0)
-  const passed = AXLES.filter((a, i) => axleX[i] > BLOCK_X + SPREAD * 1.5)
+  const loadAt = (bx, ax) => AXLES.reduce((s, a, i) => s + a.t * Math.exp(-(((ax[i] - bx) / SPREAD) ** 2)), 0)
+  const loads = BLOCKS.map(b => loadAt(b.x, axleX))
+  const ks = loads.map(l => Math.min(1, l / 9))
+  const load = Math.max(...loads)
+  const active = loads.indexOf(load)
+  const passed = AXLES.filter((a, i) => axleX[i] > LAST_X + SPREAD * 1.5)
   const total = passed.reduce((s, a) => s + a.t, 0)
   const done = passed.length === AXLES.length
-  const k = Math.min(1, load / 9)
+  const crossed = BLOCKS.filter(b => axleX[AXLES.length - 1] > b.x + SPREAD * 1.5).length
 
-  // vệt tín hiệu: tải theo thời gian của cả lượt, vẽ tới thời điểm hiện tại
-  const N = 120
-  const pts = []
+  // vệt tín hiệu của từng cục: tải theo thời gian của cả lượt, vẽ tới thời điểm hiện tại
+  const N = 160
+  const traces = BLOCKS.map(() => [])
   for (let i = 0; i <= N * t; i++) {
     const f = -TRUCK_LEN + (i / N) * (W + TRUCK_LEN * 2)
-    const v = AXLES.reduce((s, a) => s + a.t * Math.exp(-(((f - a.dx - BLOCK_X) / SPREAD) ** 2)), 0)
-    pts.push(`${(i / N) * 260},${(56 - v * 5).toFixed(1)}`)
+    const ax = AXLES.map(a => f - a.dx)
+    BLOCKS.forEach((b, j) => traces[j].push(`${((i / N) * 260).toFixed(1)},${(56 - loadAt(b.x, ax) * 5).toFixed(1)}`))
   }
 
   return (
     <div className="lp-road">
       <svg viewBox={`0 0 ${W} 330`} role="img" className="lp-roadsvg"
-        aria-label="Cục bê tông tự cảm biến chôn dưới mặt đường, xe tải chạy qua, hệ thống đo tải từng trục">
+        aria-label="Cụm bốn cục bê tông tự cảm biến chôn dưới mặt đường, xe tải chạy qua, hệ thống đo tải từng trục">
         <defs>
           <linearGradient id="rdSky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#0b1220" stopOpacity="0" /><stop offset="1" stopColor="#0f172a" stopOpacity=".6" />
@@ -74,19 +84,30 @@ export default function RoadScene() {
         <text x="14" y="236" className="lp-roadlbl">Lớp móng cấp phối đá dăm</text>
         <text x="14" y="318" className="lp-roadlbl">Nền đất</text>
 
-        {/* vùng ứng suất lan xuống cục */}
-        <ellipse cx={BLOCK_X} cy="212" rx={60 + 40 * k} ry={30 + 20 * k} fill="url(#rdGlow)" opacity={0.15 + 0.85 * k} />
+        {/* cáp tín hiệu từ từng cục gom về node ESP32 ở lề đường */}
+        <path className="lp-wire" d={`M${BLOCKS[0].x} 234 L ${BLOCKS[0].x} 280 L 870 280 L 870 140`} />
+        {BLOCKS.slice(1).map(b => <path key={b.id} className="lp-wire" d={`M${b.x} 234 L ${b.x} 280`} />)}
 
-        {/* cục SSC chôn trong lớp móng */}
-        <g>
-          <rect x={BLOCK_X - 34} y="194" width="68" height="40" rx="3" fill="#9aa2ad" stroke={k > .05 ? '#22d3ee' : '#cbd5e1'} strokeOpacity={0.4 + 0.6 * k} strokeWidth="2" />
-          <line x1={BLOCK_X - 18} y1="196" x2={BLOCK_X - 18} y2="232" stroke="#d97706" strokeWidth="3" />
-          <line x1={BLOCK_X + 18} y1="196" x2={BLOCK_X + 18} y2="232" stroke="#d97706" strokeWidth="3" />
-          <text x={BLOCK_X} y="218" textAnchor="middle" fontSize="11" fontWeight="700" fill="#0f172a">SSC</text>
-        </g>
+        {BLOCKS.map((b, j) => {
+          const k = ks[j]
+          return (
+            <g key={b.id}>
+              {/* vùng ứng suất lan xuống cục */}
+              <ellipse cx={b.x} cy="212" rx={50 + 34 * k} ry={26 + 18 * k} fill="url(#rdGlow)" opacity={0.08 + 0.92 * k} />
+              <rect x={b.x - 30} y="194" width="60" height="40" rx="3" fill="#9aa2ad" stroke={k > .05 ? b.c : '#cbd5e1'} strokeOpacity={0.4 + 0.6 * k} strokeWidth="2" />
+              <line x1={b.x - 16} y1="196" x2={b.x - 16} y2="232" stroke="#d97706" strokeWidth="3" />
+              <line x1={b.x + 16} y1="196" x2={b.x + 16} y2="232" stroke="#d97706" strokeWidth="3" />
+              <text x={b.x} y="218" textAnchor="middle" fontSize="10" fontWeight="700" fill="#0f172a">{b.id}</text>
+              {k > 0.08 && (
+                <g className="lp-arrow" opacity={k}>
+                  <line x1={b.x} y1="150" x2={b.x} y2="186" />
+                  <polyline points={`${b.x - 7},178 ${b.x},188 ${b.x + 7},178`} />
+                </g>
+              )}
+            </g>
+          )
+        })}
 
-        {/* cáp tín hiệu chạy ra lề đường tới node ESP32 */}
-        <path className="lp-wire" d={`M${BLOCK_X + 18} 234 C ${BLOCK_X + 60} 276, 760 276, 820 262 L 870 262 L 870 140`} />
         <g transform="translate(842 96)">
           <rect x="22" y="40" width="12" height="54" fill="#334155" />
           <rect width="56" height="42" rx="7" fill="#0f172a" stroke="#22d3ee" strokeOpacity=".7" />
@@ -114,24 +135,17 @@ export default function RoadScene() {
           ))}
         </g>
 
-        {/* mũi tên tải khi bánh đè lên cục */}
-        {k > 0.08 && (
-          <g className="lp-arrow" opacity={k}>
-            <line x1={BLOCK_X} y1="150" x2={BLOCK_X} y2="186" />
-            <polyline points={`${BLOCK_X - 7},178 ${BLOCK_X},188 ${BLOCK_X + 7},178`} />
-          </g>
-        )}
       </svg>
 
       <div className="lp-roadpanel">
-        <div className="lp-wavehead"><span><i className="lp-dot" /> Cục R-07 · dưới làn xe</span><span className="lp-mono">100 mẫu/giây</span></div>
+        <div className="lp-wavehead"><span><i className="lp-dot" /> Cụm 4 cục · dưới làn xe</span><span className="lp-mono">100 mẫu/giây</span></div>
         <svg viewBox="0 0 260 60" preserveAspectRatio="none" className="lp-roadtrace">
           <line x1="0" y1="56" x2="260" y2="56" stroke="rgba(148,163,184,.25)" />
-          <polyline points={pts.join(' ')} />
+          {traces.map((p, j) => <polyline key={j} points={p.join(' ')} style={{ stroke: BLOCKS[j].c }} />)}
         </svg>
         <div className="lp-wavefoot">
-          <div><small>Tải tức thời</small><b className="lp-mono lp-amber">{fmt(load)} tấn</b></div>
-          <div><small>Trục đã qua</small><b className="lp-mono">{passed.length}/{AXLES.length}</b></div>
+          <div><small>Tải tức thời{load > 0.3 ? ` · ${BLOCKS[active].id}` : ''}</small><b className="lp-mono lp-amber">{fmt(load)} tấn</b></div>
+          <div><small>Cục đã qua</small><b className="lp-mono">{crossed}/{BLOCKS.length}</b></div>
           <div><small>Trọng lượng xe</small><b className={'lp-mono ' + (done ? 'lp-weight' : '')}>{done ? fmt(total) + ' tấn' : '…'}</b></div>
         </div>
       </div>

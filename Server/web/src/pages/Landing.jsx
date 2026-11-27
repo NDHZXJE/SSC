@@ -211,7 +211,7 @@ export default function Landing() {
 
       <section className="lp-section">
         <h2>Chôn dưới mặt đường, cân từng chiếc xe</h2>
-        <p className="lp-lead">Cục bê tông tự cảm biến nằm trong lớp móng. Mỗi trục xe đi qua làm điện trở suất thay đổi, hệ thống đổi ra tải trục và cộng lại thành trọng lượng xe.</p>
+        <p className="lp-lead">Cụm cục bê tông tự cảm biến nằm dọc làn xe trong lớp móng. Mỗi trục xe đi qua làm điện trở suất từng cục thay đổi, hệ thống đổi ra tải trục và cộng lại thành trọng lượng xe.</p>
         <RoadScene />
       </section>
 
