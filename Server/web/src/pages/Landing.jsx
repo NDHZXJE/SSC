@@ -188,7 +188,7 @@ export default function Landing({ openLogin = false }) {
         <span className="eyebrow">Ứng dụng</span>
         <h2>Một vật liệu, cả mạng lưới cảm biến cho hạ tầng</h2>
         <p className="apps-lead">Mỗi cục bê tông vừa chịu lực vừa là cảm biến. Ghép với vi mạch, kết nối IoT và trí tuệ nhân tạo,
-          cả công trình trở thành một mạng cảm biến diện rộng: từ cân xe đang chạy đến cảnh báo thiên tai.</p>
+          cả công trình trở thành một mạng cảm biến diện rộng: từ cân xe đang chạy, cầu, đập đến nhà dân dụng chịu động đất.</p>
         <AppsHub />
       </section>
 
