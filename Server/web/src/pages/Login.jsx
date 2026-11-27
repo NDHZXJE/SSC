@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api, auth } from '../api'
+import '../landing.css'
 
 export default function Login() {
   const [u, setU] = useState('')
@@ -15,7 +16,9 @@ export default function Login() {
     } catch (e) { setErr(e.message) }
   }
   return (
-    <div className="login card">
+    <div className="lp lp-auth">
+      <div className="lp-bg" aria-hidden="true"><span /><span /><span /></div>
+      <div className="login card">
       <h1>SSC Monitor</h1>
       <p className="muted">Giám sát bê tông tự cảm biến</p>
       <form onSubmit={submit}>
@@ -24,6 +27,8 @@ export default function Login() {
         {err && <div className="error">{err}</div>}
         <button type="submit">Đăng nhập</button>
       </form>
+      <a className="lp-back" href="#/">← Về trang giới thiệu</a>
+      </div>
     </div>
   )
 }
