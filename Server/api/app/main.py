@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from . import config, db
 from .auth import admin_user, current_user, ensure_admin, hash_password, make_token, verify_password
-from . import ai_api
+from . import ai_api, ota
 from .ingest import ingest
 from .model import fit_linear, k_from_rho0, rho0_to_ref
 
@@ -216,6 +216,7 @@ class DevicePatch(BaseModel):
 async def list_devices(_=Depends(current_user)):
     """Chỉ các mạch đã ghép. Mạch mới phải được ghép bằng mã 6 số (POST /api/devices/pair)."""
     async with db.pool.acquire() as con:
+        await ota.expire(con)
         rows = await con.fetch(
             """SELECT d.*, s.code AS sensor_code FROM devices d
                LEFT JOIN sensors s ON s.id = d.sensor_id WHERE d.paired ORDER BY d.id""")
@@ -223,6 +224,7 @@ async def list_devices(_=Depends(current_user)):
     for r in rows:
         item = _row(r)
         item.pop("pair_code", None)
+        item["ota"] = ota.device_ota(r["ota"])
         item["online"] = _online(r["last_seen"])
         out.append(item)
     return out
@@ -555,6 +557,7 @@ def _nanmean(a):
     return None if np.all(np.isnan(a)) else float(np.nanmean(a))
 
 
+app.include_router(ota.router)      # nạp firmware OTA: /api/firmware, /api/ota/<token>
 app.include_router(ai_api.router)   # mô hình AI lai: /api/ai/*, /api/sensors/{id}/models/hybrid, ...
 
 

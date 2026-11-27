@@ -123,3 +123,13 @@ label.inline { flex-direction: row; align-items: center; gap: 8px; color: var(--
 .code6 input:nth-child(3) { margin-right: 12px; }
 .pill-count { margin-left: 8px; font-size: 12px; background: rgba(255, 255, 255, .25); padding: 1px 8px; border-radius: 999px; }
 @media (max-width: 480px) { .code6 { gap: 6px; } .code6 input { width: 42px; height: 52px; font-size: 22px; } }
+
+/* OTA */
+.small { font-size: 12px; }
+.ota-st { font-size: 12px; color: var(--accent); margin-top: 4px; min-width: 150px; }
+.ota-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-bottom: 3px; }
+.ota-bar span { display: block; height: 100%; background: var(--accent); transition: width .6s ease; }
+.deploy { padding: 6px 4px; }
+.deploy-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+.deploy-row.off { opacity: .55; cursor: default; }
+.deploy-row input { width: auto; }

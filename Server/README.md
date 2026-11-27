@@ -29,6 +29,7 @@ docker compose up -d --build
 1. **Quản trị → Thêm cục**: mã cục, cấp phối (F2), diện tích điện cực A, khoảng cách L, diện tích chịu nén.
 2. **Thiết bị → Thêm mạch đọc**: bật mạch, nhập mã 6 số hiện trên mạch để ghép. Gán mạch cho cục và nhập R1 đo thực bằng đồng hồ
    (có thể làm ngay lúc ghép). Mạch chưa ghép không hiện trong danh sách và không ghi dữ liệu.
+   Cập nhật firmware cho mạch: **Thiết bị → Firmware (OTA)**, tải file `.bin` lên rồi chọn mạch để nạp.
 3. **Hiệu chuẩn**: chọn cục → Bắt đầu lần mới → đặt cục lên máy nén. Ở mỗi bậc tải, nhập lực (kN) và bấm
    **Ghi bậc** (lấy trung bình ρ vài giây gần nhất) → **Khớp mô hình** → kiểm tra R² → **Duyệt và dùng**.
    Không có máy nén: **Tạo nhanh từ Eq.14** (đo ρ(0) lúc không tải, lấy K theo Eq. 14 của bài Measurement 2026).
@@ -61,6 +62,30 @@ docker compose up -d --build
 Mã chỉ có hiệu lực khi mạch đang online. Nhập sai 10 lần trong 10 phút thì server tạm khoá. Gợi ý cho firmware ESP32:
 mã cố định theo MAC để in được nhãn dán, ví dụ `uint32_t code = (uint32_t)(ESP.getEfuseMac() * 2654435761ULL % 1000000ULL);`
 rồi `snprintf(buf, 7, "%06u", code)`.
+
+### Nạp firmware OTA qua server
+
+Trang **Thiết bị → Firmware (OTA)** (quản trị):
+
+1. `idf.py build` rồi tải lên `build/esp32s3-meter.bin` (ảnh app, không phải `bootloader.bin` hay `.elf`). Server đọc
+   `esp_app_desc_t` trong ảnh để lấy phiên bản (`PROJECT_VER` trong `CMakeLists.txt`), tên dự án, chip, ngày build.
+   Nhớ tăng `PROJECT_VER` mỗi lần build bản mới, server dựa vào nó để biết mạch đã lên bản mới chưa.
+2. Bấm **Nạp…**, chọn mạch (mặc định chọn các mạch online chưa chạy bản này), **Nạp cho N mạch**. Cột Firmware hiện
+   tiến độ tải, rồi "đang khởi động lại", rồi "Đã nạp".
+
+Giao thức (firmware `ssc-1.1.0` trở lên, xem `Device/firmware/components/ssc_node/ssc_ota.c`):
+
+- Firmware báo `"ota": 1` trong gói status. Bản cũ hơn (không có cờ này) phải nạp bằng cáp hoặc `POST /update` một lần.
+- Server → `ssc/<id>/ota` (QoS 1, không retained):
+  `{"job": "a1b2c3d4", "url": "/api/ota/<token>", "version": "ssc-1.1.0", "size": 1201504, "sha256": "..."}`.
+  `url` bắt đầu bằng `/` thì mạch tải từ `http://<máy chủ trong địa chỉ MQTT>:8000<url>`. Đặt `OTA_BASE_URL` trong
+  `.env` (vd `https://ssc.example.com`) để gửi địa chỉ đầy đủ. Token chỉ dùng được trong lúc lần nạp đó đang chạy.
+- Mạch → `ssc/<id>/ota/state`: `{"job": "...", "state": "downloading|rebooting|error|rejected", "pct": 40, "msg": "..."}`.
+- Mạch từ chối ảnh khác chip hoặc khác tên dự án, và ảnh hỏng (`esp_ota_end` kiểm tra SHA-256 gắn trong ảnh).
+- Sau khi khởi động lại, bản mới chỉ được giữ nếu kết nối được MQTT trong 5 phút; không thì mạch tự quay về bản cũ
+  (rollback) và web báo "bản mới bị trả về bản cũ". Lần nạp không phản hồi quá 3–10 phút thì web báo lỗi, nạp lại được.
+
+Thử không cần mạch thật: bộ giả lập (`--profile sim`) cũng nhận lệnh OTA, tải ảnh thật, kiểm tra sha256 rồi báo phiên bản mới.
 
 ## Cách tính
 

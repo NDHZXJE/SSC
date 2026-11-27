@@ -50,9 +50,10 @@ export function download(path, filename) {
 export const fmt = (v, d = 3) => (v === null || v === undefined || Number.isNaN(v) ? '–' : Number(v).toFixed(d))
 export const isAdmin = () => auth.user?.role === 'admin'
 
-export async function upload(path, file) {
+export async function upload(path, file, fields = {}) {
   const fd = new FormData()
   fd.append('file', file)
+  for (const [k, v] of Object.entries(fields)) fd.append(k, v)
   const res = await fetch('/api' + path, { method: 'POST', body: fd, headers: { Authorization: 'Bearer ' + auth.token } })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || res.statusText))

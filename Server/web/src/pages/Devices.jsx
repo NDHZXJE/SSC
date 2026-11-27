@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, isAdmin } from '../api'
+import { api, isAdmin, upload } from '../api'
 
 // Ô nhập mã 6 số: tự nhảy ô, dán được cả mã, Backspace lùi ô
 function CodeInput({ value, onChange }) {
@@ -96,6 +96,146 @@ function PairCard({ sensors, onClose, onPaired }) {
   )
 }
 
+const kb = n => (n / 1024).toFixed(0) + ' KB'
+const BUSY = ['sent', 'downloading', 'rebooting']
+const canOta = d => d.online && d.ota_ok && !BUSY.includes(d.ota?.state)
+
+// Tiến độ lần nạp gần nhất của một mạch
+function OtaState({ d }) {
+  const o = d.ota
+  if (!o) return d.ota_ok ? null : <div className="muted small">chưa hỗ trợ OTA qua server</div>
+  if (o.state === 'sent') return <div className="ota-st">Đã gửi lệnh nạp {o.version}…</div>
+  if (o.state === 'downloading') return (
+    <div className="ota-st">
+      <div className="ota-bar"><span style={{ width: `${o.pct || 0}%` }} /></div>
+      Đang tải {o.version}: {o.pct || 0}%
+    </div>
+  )
+  if (o.state === 'rebooting') return <div className="ota-st">Đã ghi xong, đang khởi động lại…</div>
+  if (o.state === 'ok') return <div className="muted small">Đã nạp {o.version} lúc {new Date(o.at).toLocaleString('vi-VN')}</div>
+  if (o.state === 'failed') return <div className="error small" title={o.msg}>Nạp {o.version} lỗi: {o.msg || 'không rõ'}</div>
+  return null
+}
+
+// Chọn mạch để nạp một bản firmware
+function DeployBox({ fw, devs, onDone }) {
+  const [sel, setSel] = useState(() => new Set(devs.filter(d => canOta(d) && d.fw !== fw.version).map(d => d.id)))
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const toggle = id => setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const go = async () => {
+    setBusy(true)
+    setErr('')
+    try {
+      const r = await api(`/firmware/${fw.id}/deploy`, { method: 'POST', body: { devices: [...sel] } })
+      const bad = Object.entries(r.results).filter(([, v]) => v !== 'sent')
+      onDone(Object.keys(r.results).length - bad.length, bad)
+    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+  }
+  return (
+    <div className="deploy">
+      {!devs.length && <div className="muted">Chưa có mạch nào được ghép.</div>}
+      {devs.map(d => {
+        const why = !d.online ? 'offline' : !d.ota_ok ? 'firmware chưa hỗ trợ OTA' : BUSY.includes(d.ota?.state) ? 'đang nạp' : ''
+        return (
+          <label key={d.id} className={'deploy-row' + (why ? ' off' : '')}>
+            <input type="checkbox" disabled={!!why} checked={sel.has(d.id)} onChange={() => toggle(d.id)} />
+            <strong>{d.id}</strong> <span className="muted">{d.sensor_code || 'chưa gán cục'} · đang chạy {d.fw || '?'}</span>
+            {why && <span className="badge">{why}</span>}
+            {!why && d.fw === fw.version && <span className="badge">đã là bản này</span>}
+          </label>
+        )
+      })}
+      <div className="row" style={{ marginTop: 10 }}>
+        <button disabled={!sel.size || busy} onClick={go}>{busy ? 'Đang gửi…' : `Nạp ${fw.version} cho ${sel.size} mạch`}</button>
+        <span className="muted small">Mạch tải firmware từ server, ghi vào phân vùng còn lại rồi khởi động lại (khoảng 1 phút).
+          Bản mới không kết nối lại được server thì mạch tự quay về bản cũ.</span>
+      </div>
+      {err && <div className="error">{err}</div>}
+    </div>
+  )
+}
+
+function FwRow({ f, devs, open, setOpen, del, onDone }) {
+  const running = devs.filter(d => d.fw === f.version).length
+  return (
+    <>
+      <tr>
+        <td><strong>{f.version}</strong>{running > 0 && <div className="muted small">{running} mạch đang chạy</div>}</td>
+        <td>{f.project}<div className="muted small">{f.chip} · IDF {f.idf_ver}</div></td>
+        <td>{kb(f.size)}</td>
+        <td className="small">{f.built}</td>
+        <td className="small">{f.notes || '—'}</td>
+        <td className="small">{new Date(f.uploaded_at).toLocaleString('vi-VN')}<div className="muted">{f.uploaded_by}</div></td>
+        <td style={{ whiteSpace: 'nowrap' }}>
+          <button onClick={() => setOpen(!open)}>{open ? 'Đóng' : 'Nạp…'}</button>{' '}
+          <button className="danger" onClick={() => del(f)}>Xoá</button>
+        </td>
+      </tr>
+      {open && <tr><td colSpan="7"><DeployBox fw={f} devs={devs} onDone={onDone} /></td></tr>}
+    </>
+  )
+}
+
+function FirmwarePanel({ devs, onChanged }) {
+  const [list, setList] = useState([])
+  const [file, setFile] = useState(null)
+  const [notes, setNotes] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [open, setOpen] = useState(null)
+  const [msg, setMsg] = useState(['', ''])
+  const fileRef = useRef(null)
+  const load = () => api('/firmware').then(setList).catch(e => setMsg(['err', e.message]))
+  useEffect(() => { load() }, [])
+  const send = async e => {
+    e.preventDefault()
+    if (!file) return
+    setBusy(true)
+    setMsg(['', ''])
+    try {
+      const r = await upload('/firmware', file, { notes })
+      setMsg(['ok', `Đã tải lên ${r.version} (${r.project}, ${r.chip}, ${kb(r.size)}). Chọn mạch để nạp bên dưới.`])
+      setFile(null)
+      setNotes('')
+      if (fileRef.current) fileRef.current.value = ''
+      setOpen(r.id)
+      load()
+    } catch (er) { setMsg(['err', er.message]) } finally { setBusy(false) }
+  }
+  const del = f => confirm(`Xoá firmware ${f.version}?`) &&
+    api(`/firmware/${f.id}`, { method: 'DELETE' }).then(load).catch(e => setMsg(['err', e.message]))
+  return (
+    <div className="card">
+      <h2>Firmware (OTA)</h2>
+      <p className="muted">
+        Build bằng <code>idf.py build</code> rồi tải lên file <code>build/esp32s3-meter.bin</code>. Server đọc phiên bản
+        ghi trong ảnh (<code>PROJECT_VER</code>) và gửi lệnh cho từng mạch qua MQTT; mạch tự tải về và nạp.
+      </p>
+      <form className="row" onSubmit={send}>
+        <input ref={fileRef} type="file" accept=".bin,application/octet-stream" onChange={e => setFile(e.target.files[0] || null)} />
+        <input placeholder="Ghi chú (vd: sửa lỗi đo nhiệt độ)" value={notes} onChange={e => setNotes(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
+        <button type="submit" disabled={!file || busy}>{busy ? 'Đang tải lên…' : 'Tải lên'}</button>
+      </form>
+      {msg[0] && <div className={msg[0] === 'ok' ? 'ok' : 'error'}>{msg[1]}</div>}
+      <table>
+        <thead><tr><th>Phiên bản</th><th>Dự án</th><th>Kích thước</th><th>Build</th><th>Ghi chú</th><th>Tải lên</th><th></th></tr></thead>
+        <tbody>
+          {list.map(f => (
+            <FwRow key={f.id} f={f} devs={devs} open={open === f.id} setOpen={v => setOpen(v ? f.id : null)} del={del}
+              onDone={(n, bad) => {
+                setOpen(null)
+                setMsg([bad.length ? 'err' : 'ok', `Đã gửi lệnh nạp ${f.version} cho ${n} mạch.` +
+                  (bad.length ? ' Bỏ qua: ' + bad.map(([id, why]) => `${id} (${why})`).join(', ') : '')])
+                onChanged()
+              }} />
+          ))}
+          {!list.length && <tr><td colSpan="7" className="muted">Chưa có firmware nào.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function Devices() {
   const [devs, setDevs] = useState([])
   const [sensors, setSensors] = useState([])
@@ -149,7 +289,7 @@ export default function Devices() {
                   ? <input type="number" step="any" defaultValue={d.rr_ohm} style={{ width: 100 }}
                       onBlur={e => Number(e.target.value) !== d.rr_ohm && patch(d.id, { rr_ohm: Number(e.target.value) })} />
                   : d.rr_ohm}</td>
-                <td>{d.fw || '—'}</td>
+                <td>{d.fw || '—'}<OtaState d={d} /></td>
                 <td>{d.rssi != null ? `${d.rssi} dBm` : '—'}</td>
                 <td>{d.last_seen ? new Date(d.last_seen).toLocaleString('vi-VN') : '—'}</td>
                 {admin && <td><button className="danger" onClick={() => remove(d.id)}>Bỏ ghép</button></td>}
@@ -164,6 +304,7 @@ export default function Devices() {
           </tbody>
         </table>
       </div>
+      {admin && <FirmwarePanel devs={devs} onChanged={load} />}
     </>
   )
 }
