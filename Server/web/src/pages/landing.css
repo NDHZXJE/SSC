@@ -174,3 +174,91 @@ a.member:hover { border-color: var(--l-cyan); transform: translateY(-2px); }
 .avatar span { font-size: 36px; font-weight: 700; color: #e0f2fe; }
 @media (max-width: 900px) { .team { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 420px) { .avatar { width: 96px; height: 96px; } }
+
+/* ---- Ứng dụng (AppsHub.jsx) ---- */
+.apps { padding: 64px clamp(16px, 5vw, 64px) 24px; max-width: 1320px; margin: 0 auto; }
+.apps h2 { font-size: clamp(24px, 3vw, 36px); margin: 16px 0 10px; letter-spacing: -.5px; }
+.apps-lead { color: var(--l-muted); max-width: 760px; line-height: 1.6; margin: 0 0 28px; }
+.ah-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;
+  grid-template-areas: "bridge dam building" "traffic center energy" "twin center warn"; }
+.ah-bridge { grid-area: bridge; } .ah-dam { grid-area: dam; } .ah-building { grid-area: building; }
+.ah-traffic { grid-area: traffic; } .ah-energy { grid-area: energy; } .ah-twin { grid-area: twin; } .ah-warn { grid-area: warn; }
+.ah-center { grid-area: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 20px; background: radial-gradient(circle at 50% 40%, #22d3ee22, transparent 65%); padding: 8px; }
+.ah-hub { width: 100%; max-width: 440px; height: auto; display: block; padding: 0 30px; box-sizing: border-box; }
+.ah-caption { text-align: center; color: var(--l-text); font-size: 15px; line-height: 1.5; margin: 4px 10px 0; max-width: 420px; }
+.ah-caption b { color: var(--l-cyan); }
+.ah-card { position: relative; background: linear-gradient(180deg, var(--l-card), #0f151d); border: 1px solid var(--l-line); border-radius: 16px;
+  padding: 10px 10px 14px; overflow: hidden; transition: transform .2s, border-color .2s; }
+.ah-card:hover { transform: translateY(-3px); border-color: var(--l-cyan); }
+.ah-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 0 0 1px #22d3ee55; opacity: 0; animation: ahPulse 4.2s infinite; }
+.ah-dam::after { animation-delay: .6s; } .ah-building::after { animation-delay: 1.2s; } .ah-energy::after { animation-delay: 1.8s; }
+.ah-warn::after { animation-delay: 2.4s; } .ah-twin::after { animation-delay: 3s; } .ah-traffic::after { animation-delay: 3.6s; }
+@keyframes ahPulse { 0%, 70%, 100% { opacity: 0; } 15% { opacity: 1; } }
+.ah-svg { width: 100%; height: auto; aspect-ratio: 2 / 1; display: block; border-radius: 10px; }
+.ah-card h3 { margin: 10px 4px 4px; font-size: 16px; }
+.ah-card p { margin: 0 4px; color: var(--l-muted); font-size: 13.5px; line-height: 1.5; }
+
+.ah-wave { animation: ahWave 2.4s linear infinite; }
+@keyframes ahWave { to { transform: translateX(40px); } }
+.ah-car { animation: ahDrive 5s linear infinite; }
+.ah-car-b { animation-duration: 6.5s; animation-delay: -3s; }
+@keyframes ahDrive { to { transform: translateX(280px); } }
+.ah-car-road { animation: ahRoad 3.6s linear infinite; }
+.ah-car-road2 { animation: ahRoad 4.8s linear infinite -2s; }
+.ah-car-road3 { animation: ahRoad 3s linear infinite -1s; }
+@keyframes ahRoad { from { transform: translate(0, 0); } to { transform: translate(270px, -26px); } }
+.ah-lane { animation: ahLane 1s linear infinite; }
+@keyframes ahLane { to { stroke-dashoffset: -18; } }
+.ah-blink { fill: #22d3ee; animation: ahBlink 1.2s infinite; }
+@keyframes ahBlink { 50% { opacity: .2; } }
+.ah-bob { animation: ahBob 3s ease-in-out infinite; }
+@keyframes ahBob { 50% { transform: translateY(4px); } }
+.ah-beam { animation: ahLane .8s linear infinite; }
+.ah-fall line { animation: ahFall .6s linear infinite; }
+@keyframes ahFall { to { stroke-dashoffset: -12; } }
+.ah-ring { fill: none; stroke: #22d3ee; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: ahRing 1.8s ease-out infinite; }
+@keyframes ahRing { from { transform: scale(.6); opacity: 1; } to { transform: scale(3.2); opacity: 0; } }
+.ah-win { animation: ahWin 2.6s steps(2) infinite; }
+@keyframes ahWin { 50% { opacity: .95; fill: #fde68a; } }
+.ah-spin { transform-box: fill-box; transform-origin: center; animation: ahSpin 3s linear infinite; }
+@keyframes ahSpin { to { transform: rotate(360deg); } }
+.ah-glow { filter: drop-shadow(0 0 4px #fbbf24); }
+.ah-draw { stroke-dasharray: 120; animation: ahDraw 3s ease-in-out infinite; }
+@keyframes ahDraw { from { stroke-dashoffset: 120; } 60%, to { stroke-dashoffset: 0; } }
+.ah-bar { transform-box: fill-box; transform-origin: bottom; animation: ahBar 1.6s ease-in-out infinite alternate; }
+@keyframes ahBar { from { transform: scaleY(.4); } }
+.ah-scan { animation: ahScan 3s ease-in-out infinite alternate; }
+@keyframes ahScan { to { transform: translateX(172px); } }
+.ah-rain { animation: ahRain .7s linear infinite; }
+@keyframes ahRain { from { transform: translate(0, -40px); } to { transform: translate(-10px, 0); } }
+.ah-flood { animation: ahFlood 4s ease-in-out infinite alternate; }
+@keyframes ahFlood { to { transform: translateY(-12px); } }
+.ah-alert { transform-box: fill-box; transform-origin: center; animation: ahAlert 1s ease-in-out infinite; }
+@keyframes ahAlert { 50% { opacity: .35; transform: scale(.9); } }
+
+.ah-electrode { fill: #f97316; stroke: #fdba74; animation: ahEl 1.8s ease-in-out infinite; }
+@keyframes ahEl { 50% { fill: #fb923c; filter: drop-shadow(0 0 6px #f97316); } }
+.ah-tag { fill: #cbd5e1; font-size: 11px; font-weight: 600; }
+.ah-spark { fill: #a5f3fc; filter: drop-shadow(0 0 4px #22d3ee); }
+.ah-led { fill: #34d399; animation: lpBlink 1s steps(2) infinite; }
+.ah-wifi path { opacity: .15; animation: lpWifi 1.8s infinite; }
+.ah-wifi path:nth-child(2) { animation-delay: .25s; } .ah-wifi path:nth-child(3) { animation-delay: .5s; }
+.ah-dash { stroke-dasharray: 5 5; animation: lpDash 1s linear infinite; }
+.ah-gear { transform-box: fill-box; transform-origin: center; animation: ahSpin 8s linear infinite; }
+.ah-gear.rev { animation-direction: reverse; }
+.ah-gearlbl { fill: var(--l-text); font-size: 12.5px; font-weight: 700; }
+
+@media (max-width: 960px) {
+  .ah-grid { grid-template-columns: 1fr 1fr; grid-template-areas: "center center" "bridge dam" "building traffic" "energy twin" "warn warn"; }
+  .ah-warn { max-width: calc(50% - 9px); }
+}
+@media (max-width: 560px) {
+  .ah-grid { grid-template-columns: 1fr; grid-template-areas: "center" "bridge" "dam" "building" "traffic" "energy" "twin" "warn"; }
+  .ah-warn { max-width: none; }
+}
+/* Máy tắt hiệu ứng: vẫn chạy nhưng chậm hơn (như các hoạt ảnh khác) */
+@media (prefers-reduced-motion: reduce) {
+  .ah-grid *, .ah-card::after { animation-duration: 6s !important; }
+}

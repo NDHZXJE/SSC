@@ -3,6 +3,7 @@ import { api, auth } from '../api'
 import './landing.css'
 import { SensorScene } from './SensorScene'
 import { RoadScene } from './RoadScene'
+import { AppsHub } from './AppsHub'
 
 // Load cycle shared by the animated block and the signal trace (period 6 s).
 const PERIOD = 3.2 // cùng nhịp với hoạt ảnh máy nén (lpPress trong landing.css)
@@ -151,6 +152,7 @@ export default function Landing({ openLogin = false }) {
         <a className="brand" href="#/"><span className="logo" />SSC Monitor</a>
         <div className="lnav-links">
           <a href="#how">Cách hoạt động</a>
+          <a href="#apps">Ứng dụng</a>
           <a href="#features">Tính năng</a>
           <a href="#about">Về chúng tôi</a>
           <button className="btn ghost" onClick={() => setLogin(true)}>Đăng nhập</button>
@@ -181,6 +183,14 @@ export default function Landing({ openLogin = false }) {
           <SensorScene />
           <SignalTrace t={t} />
         </div>
+      </section>
+
+      <section id="apps" className="apps">
+        <span className="eyebrow">Ứng dụng</span>
+        <h2>Một vật liệu, cả mạng lưới cảm biến cho hạ tầng</h2>
+        <p className="apps-lead">Mỗi cục bê tông vừa chịu lực vừa là cảm biến. Ghép với vi mạch, kết nối IoT và trí tuệ nhân tạo,
+          cả công trình trở thành một mạng cảm biến diện rộng.</p>
+        <AppsHub />
       </section>
 
       <section id="road" className="road">
