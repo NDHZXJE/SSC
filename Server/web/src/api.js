@@ -1,3 +1,4 @@
+import { t } from './i18n'
 // Tiny API client. Token lives in localStorage.
 const KEY = 'ssc_token'
 
@@ -29,14 +30,14 @@ export async function api(path, { method = 'GET', body } = {}) {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     const d = data.detail
-    throw new Error(typeof d === 'string' ? d : JSON.stringify(d || res.statusText))
+    throw new Error(typeof d === 'string' ? t(d) : JSON.stringify(d || res.statusText))
   }
   return data
 }
 
 export function download(path, filename) {
   fetch('/api' + path, { headers: { Authorization: 'Bearer ' + auth.token } })
-    .then(r => { if (!r.ok) throw new Error('Tải xuống lỗi'); return r.blob() })
+    .then(r => { if (!r.ok) throw new Error(t('Tải xuống lỗi')); return r.blob() })
     .then(b => {
       const a = document.createElement('a')
       a.href = URL.createObjectURL(b)

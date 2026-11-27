@@ -174,3 +174,110 @@ a.member:hover { border-color: var(--l-cyan); transform: translateY(-2px); }
 .avatar span { font-size: 36px; font-weight: 700; color: #e0f2fe; }
 @media (max-width: 900px) { .team { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 420px) { .avatar { width: 96px; height: 96px; } }
+
+/* ---- Ứng dụng (AppsHub.jsx) ---- */
+.apps { padding: 64px clamp(16px, 5vw, 64px) 24px; max-width: 1320px; margin: 0 auto; }
+.apps h2 { font-size: clamp(24px, 3vw, 36px); margin: 16px 0 10px; letter-spacing: -.5px; }
+.apps-lead { color: var(--l-muted); max-width: 760px; line-height: 1.6; margin: 0 0 28px; }
+.ah-wrap { display: flex; flex-direction: column; gap: 14px; }
+.ah-side { display: block; }
+.ah-tabs { position: relative; list-style: none; margin: 0; padding: 2px; width: 100%; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.ah-tabs::-webkit-scrollbar { display: none; }
+.ah-tabs li { flex: 1 0 auto; }
+.ah-tabs button { position: relative; width: 100%; text-align: left; font: inherit; font-size: 14px; color: var(--l-muted); background: #0f151d; white-space: nowrap; justify-content: center;
+  border: 1px solid var(--l-line); border-radius: 99px; padding: 9px 14px; cursor: pointer; overflow: hidden; display: flex; gap: 10px; align-items: center; transition: all .25s; }
+.ah-tabs button:hover { color: var(--l-text); background: #ffffff08; }
+.ah-tabs button.on { color: #04121a; background: var(--l-cyan); border-color: var(--l-cyan); font-weight: 600; }
+.ah-tabs button.on .ah-num { color: #04121a; }
+.ah-num { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--l-cyan); }
+.ah-progress { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: #04121a66; transform-origin: left; animation: ahProg linear forwards; }
+.ah-progress.paused { animation-play-state: paused; }
+@keyframes ahProg { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.ah-stage { position: relative; overflow: hidden; border-radius: 22px; border: 1px solid var(--l-line); background: #0b1118; touch-action: pan-y; user-select: none; min-height: 100%; }
+.ah-track { display: flex; height: 100%; transition: transform .9s cubic-bezier(.65, 0, .25, 1); }
+.ah-slide { flex: 0 0 100%; position: relative; display: flex; flex-direction: column; }
+.ah-art { overflow: hidden; }
+.ah-art .ah-svg { border-radius: 0; aspect-ratio: 2 / 1; transform: scale(1.12); transition: transform 6s ease-out; }
+.ah-slide.on .ah-art .ah-svg { transform: scale(1); }
+.ah-text { padding: 16px 28px 26px; }
+.ah-text > * { opacity: 0; transform: translateY(18px); transition: opacity .6s, transform .6s; }
+.ah-slide.on .ah-text > * { opacity: 1; transform: none; }
+.ah-slide.on .ah-text h3 { transition-delay: .35s; } .ah-slide.on .ah-text p { transition-delay: .5s; } .ah-slide.on .ah-kicker { transition-delay: .2s; }
+.ah-kicker { display: inline-block; font-size: 12px; letter-spacing: .6px; text-transform: uppercase; color: var(--l-cyan); }
+.ah-text h3 { margin: 6px 0 6px; font-size: clamp(20px, 2.4vw, 30px); letter-spacing: -.3px; }
+.ah-text p { margin: 0; color: #cbd5e1; font-size: clamp(14px, 1.2vw, 17px); line-height: 1.55; max-width: 620px; }
+.ah-nav { position: absolute; top: 28%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 1px solid #ffffff33;
+  background: #070b11aa; color: #fff; font-size: 28px; line-height: 1; cursor: pointer; backdrop-filter: blur(6px); transition: background .2s, transform .2s; }
+.ah-nav:hover { background: #22d3ee44; transform: translateY(-50%) scale(1.08); }
+.ah-nav.prev { left: 14px; } .ah-nav.next { right: 14px; }
+.ah-slide.wide .ah-art { padding: 14px 14px 0; display: block; }
+.ah-slide.wide .road-card { box-shadow: none; border: 0; padding: 0; background: none; }
+.ah-slide.wide .road-note { display: none; }
+.ah-dots { position: absolute; top: 14px; right: 18px; display: flex; gap: 6px; }
+.ah-dots button { width: 8px; height: 8px; border-radius: 99px; border: 0; padding: 0; background: #ffffff55; cursor: pointer; transition: all .3s; }
+.ah-dots button.on { width: 22px; background: var(--l-cyan); }
+.ah-svg { width: 100%; height: auto; aspect-ratio: 2 / 1; display: block; border-radius: 10px; }
+
+.ah-wave { animation: ahWave 2.4s linear infinite; }
+@keyframes ahWave { to { transform: translateX(40px); } }
+.ah-car { animation: ahDrive 5s linear infinite; }
+.ah-car-b { animation-duration: 6.5s; animation-delay: -3s; }
+@keyframes ahDrive { to { transform: translateX(280px); } }
+.ah-car-road { animation: ahRoad 3.6s linear infinite; }
+.ah-car-road2 { animation: ahRoad 4.8s linear infinite -2s; }
+.ah-car-road3 { animation: ahRoad 3s linear infinite -1s; }
+@keyframes ahRoad { from { transform: translate(0, 0); } to { transform: translate(270px, -26px); } }
+.ah-lane { animation: ahLane 1s linear infinite; }
+@keyframes ahLane { to { stroke-dashoffset: -18; } }
+.ah-blink { fill: #22d3ee; animation: ahBlink 1.2s infinite; }
+@keyframes ahBlink { 50% { opacity: .2; } }
+.ah-bob { animation: ahBob 3s ease-in-out infinite; }
+@keyframes ahBob { 50% { transform: translateY(4px); } }
+.ah-beam { animation: ahLane .8s linear infinite; }
+.ah-fall line { animation: ahFall .6s linear infinite; }
+@keyframes ahFall { to { stroke-dashoffset: -12; } }
+.ah-ring { fill: none; stroke: #22d3ee; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: ahRing 1.8s ease-out infinite; }
+@keyframes ahRing { from { transform: scale(.6); opacity: 1; } to { transform: scale(3.2); opacity: 0; } }
+.ah-win { animation: ahWin 2.6s steps(2) infinite; }
+@keyframes ahWin { 50% { opacity: .95; fill: #fde68a; } }
+.ah-spin { transform-box: fill-box; transform-origin: center; animation: ahSpin 3s linear infinite; }
+@keyframes ahSpin { to { transform: rotate(360deg); } }
+.ah-glow { filter: drop-shadow(0 0 4px #fbbf24); }
+.ah-draw { stroke-dasharray: 120; animation: ahDraw 3s ease-in-out infinite; }
+@keyframes ahDraw { from { stroke-dashoffset: 120; } 60%, to { stroke-dashoffset: 0; } }
+.ah-bar { transform-box: fill-box; transform-origin: bottom; animation: ahBar 1.6s ease-in-out infinite alternate; }
+@keyframes ahBar { from { transform: scaleY(.4); } }
+.ah-scan { animation: ahScan 3s ease-in-out infinite alternate; }
+@keyframes ahScan { to { transform: translateX(172px); } }
+.ah-rain { animation: ahRain .7s linear infinite; }
+@keyframes ahRain { from { transform: translate(0, -40px); } to { transform: translate(-10px, 0); } }
+.ah-flood { animation: ahFlood 4s ease-in-out infinite alternate; }
+@keyframes ahFlood { to { transform: translateY(-12px); } }
+.ah-alert { transform-box: fill-box; transform-origin: center; animation: ahAlert 1s ease-in-out infinite; }
+@keyframes ahAlert { 50% { opacity: .35; transform: scale(.9); } }
+
+
+@media (max-width: 560px) {
+  .ah-tabs li { flex: 0 0 auto; }
+  .ah-art .ah-svg { aspect-ratio: 4 / 3; }
+  .ah-text { padding: 12px 16px 34px; }
+  .ah-nav { top: 110px; width: 36px; height: 36px; font-size: 22px; }
+  .ah-slide.wide .road-read { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .ah-slide.wide .road-read > div { padding: 8px; }
+  .ah-slide.wide .road-read b { font-size: 15px; }
+  .ah-slide.wide .road-axles, .ah-slide.wide .road-meter b span, .ah-slide.wide .road-total span { display: none; }
+  .ah-slide.wide .road-read { grid-template-columns: 1fr 1fr; }
+  .ah-dots { top: auto; bottom: 12px; left: 0; right: 0; justify-content: center; }
+}
+/* Máy tắt hiệu ứng: vẫn chạy nhưng chậm hơn (như các hoạt ảnh khác) */
+@media (prefers-reduced-motion: reduce) {
+  .ah-wrap svg * { animation-duration: 6s !important; }
+  .ah-track { transition-duration: 1.4s; }
+}
+
+/* chọn ngôn ngữ */
+.lang-switch { display: inline-flex; border: 1px solid rgba(148, 163, 184, .35); border-radius: 999px; padding: 2px; gap: 2px; }
+.lang-switch button { background: none; border: 0; color: inherit; font: 600 12px/1 inherit; padding: 6px 9px; border-radius: 999px; cursor: pointer; opacity: .7; }
+.lang-switch button:hover { opacity: 1; }
+.lang-switch button.on { background: #22d3ee; color: #04121c; opacity: 1; }

@@ -1,3 +1,4 @@
+import { t as tr } from '../i18n'
 // Hoạt ảnh cục bê tông trên máy nén (bản gốc của trang giới thiệu). Chuyển động bằng CSS: landing.css, mục lp-*.
 
 // Các viên cốt liệu rải trên mặt cục bê tông (cố định để hình không nhảy mỗi lần vẽ)
@@ -10,7 +11,7 @@ const GRAVEL = [
 export function SensorScene() {
   return (
     <svg className="lp-scene scene" viewBox="0 0 540 430" role="img"
-      aria-label="Cục bê tông tự cảm biến chịu tải, dòng điện đi qua bê tông, node ESP32 gửi dữ liệu không dây">
+      aria-label={tr('Cục bê tông tự cảm biến chịu tải, dòng điện đi qua bê tông, node ESP32 gửi dữ liệu không dây')}>
       <defs>
         <linearGradient id="lpTop" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#c9ced6" /><stop offset="1" stopColor="#9aa2ad" />

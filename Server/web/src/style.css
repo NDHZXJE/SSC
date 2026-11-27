@@ -133,3 +133,8 @@ label.inline { flex-direction: row; align-items: center; gap: 8px; color: var(--
 .deploy-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
 .deploy-row.off { opacity: .55; cursor: default; }
 .deploy-row input { width: auto; }
+
+/* chọn ngôn ngữ */
+.lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; gap: 2px; }
+.lang-switch button { background: none; border: 0; color: var(--muted); font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 999px; cursor: pointer; }
+.lang-switch button.on { background: var(--text); color: var(--card); }

@@ -1,3 +1,4 @@
+import { t as tr } from '../i18n'
 import { useEffect, useState } from 'react'
 
 // Cục SSC chôn dưới mặt đường: xe tải chạy qua, mỗi trục ép lên cục một lần,
@@ -92,7 +93,7 @@ export function RoadScene() {
   return (
     <div className="road-card">
       <svg viewBox="0 0 1000 380" className="road-svg" role="img"
-        aria-label="Mặt cắt đường có cục bê tông tự cảm biến chôn bên dưới, xe tải chạy qua và tín hiệu tải trọng gửi về trạm">
+        aria-label={tr('Mặt cắt đường có cục bê tông tự cảm biến chôn bên dưới, xe tải chạy qua và tín hiệu tải trọng gửi về trạm')}>
         <defs>
           <linearGradient id="rdSoil" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#3b2f25" /><stop offset="1" stopColor="#1c1510" />
@@ -118,9 +119,9 @@ export function RoadScene() {
         <rect x="0" y={ROAD_Y} width="1000" height="36" fill="#1f2937" />
         <rect x="0" y={ROAD_Y} width="1000" height="36" fill="url(#rdAsphalt)" />
         <line x1="0" y1={ROAD_Y} x2="1000" y2={ROAD_Y} stroke="#64748b" strokeWidth="2" />
-        <text x="14" y={ROAD_Y + 23} className="rd-label">Bê tông nhựa</text>
-        <text x="14" y={ROAD_Y + 63} className="rd-label">Móng cấp phối</text>
-        <text x="14" y={ROAD_Y + 140} className="rd-label">Nền đất</text>
+        <text x="14" y={ROAD_Y + 23} className="rd-label">{tr('Bê tông nhựa')}</text>
+        <text x="14" y={ROAD_Y + 63} className="rd-label">{tr('Móng cấp phối')}</text>
+        <text x="14" y={ROAD_Y + 140} className="rd-label">{tr('Nền đất')}</text>
 
         {cubes.map((c, j) => (
           <g key={c.cx}>
@@ -145,7 +146,7 @@ export function RoadScene() {
             </text>
           </g>
         ))}
-        <text x={CUBE_X - 50} y={ROAD_Y + 122} textAnchor="end" className="rd-label strong">Cụm SSC</text>
+        <text x={CUBE_X - 50} y={ROAD_Y + 122} textAnchor="end" className="rd-label strong">{tr('Cụm SSC')}</text>
 
         {/* cáp về tủ bên lề đường */}
         <path className="lp-wire" d={`M${CUBE_X} ${ROAD_Y + 170} V ${ROAD_Y + 182} H 905 V ${ROAD_Y + 2}`} />
@@ -166,37 +167,36 @@ export function RoadScene() {
         {/* bảng điện tử bên đường */}
         <g transform={`translate(${CUBES[hot] - 80} 2)`}>
           <rect width="160" height="46" rx="8" fill="#0b1118" stroke={level > 0.05 ? '#fbbf24' : '#334155'} />
-          <text x="80" y="18" textAnchor="middle" fill="#94a3b8" fontSize="11">Tải trên cục R-0{hot + 1}</text>
+          <text x="80" y="18" textAnchor="middle" fill="#94a3b8" fontSize="11">{tr('Tải trên cục')} R-0{hot + 1}</text>
           <text x="80" y="38" textAnchor="middle" fill="#fbbf24" fontSize="17" fontWeight="700" fontFamily="ui-monospace,monospace">
-            {fmt(load)} tấn
+            {fmt(load)} {tr('tấn')}
           </text>
         </g>
       </svg>
 
       <div className="road-read">
         <div className="road-meter">
-          <small>Tải tức thời</small>
+          <small>{tr('Tải tức thời')}</small>
           <b className="mono">{fmt(load)} t <span>· {fmt(load * 9.81)} kN</span></b>
           <div className="road-bar"><i style={{ width: `${Math.min(100, (load / maxW) * 100)}%` }} /></div>
         </div>
         <div className="road-axles">
-          <small>{spec.name} · tải từng trục · đã qua {read}/{CUBES.length} cục</small>
+          <small>{tr(spec.name)} · {tr('tải từng trục · đã qua {a}/{b} cục', { a: read, b: CUBES.length })}</small>
           <div>
             {[2, 1, 0].map((i, k) => (
               <span key={i} className={'axle' + (done.includes(i) ? ' on' : '')}>
-                Trục {k + 1}: <b className="mono">{done.includes(i) ? `${fmt(spec.w[i])} t` : '…'}</b>
+                {tr('Trục')} {k + 1}: <b className="mono">{done.includes(i) ? `${fmt(spec.w[i])} t` : '…'}</b>
               </span>
             ))}
           </div>
         </div>
         <div className={'road-total' + (finished ? ' on' : '')}>
-          <small>Trọng lượng xe</small>
-          <b className="mono">{done.length ? `${fmt(total)} tấn` : '—'}</b>
-          <span>{finished ? 'Trung bình 4 cục, đã gửi về server' : done.length ? 'Đang đọc qua cụm cục…' : 'Chờ xe tới'}</span>
+          <small>{tr('Trọng lượng xe')}</small>
+          <b className="mono">{done.length ? `${fmt(total)} ${tr('tấn')}` : '—'}</b>
+          <span>{finished ? tr('Trung bình 4 cục, đã gửi về server') : done.length ? tr('Đang đọc qua cụm cục…') : tr('Chờ xe tới')}</span>
         </div>
       </div>
-      <p className="road-note">Hình minh họa. Mỗi trục xe ép lần lượt lên từng cục trong cụm, tín hiệu điện trở tăng giảm theo tải;
-        cộng các trục lại và lấy trung bình nhiều cục ra trọng lượng xe chính xác hơn, không cần dừng xe.</p>
+      <p className="road-note">{tr('Hình minh họa. Mỗi trục xe ép lần lượt lên từng cục trong cụm, tín hiệu điện trở tăng giảm theo tải; cộng các trục lại và lấy trung bình nhiều cục ra trọng lượng xe chính xác hơn, không cần dừng xe.')}</p>
     </div>
   )
 }
